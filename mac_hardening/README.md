@@ -24,4 +24,15 @@ Bechmarks are based on
     -Accounts Preferences Action Items
 -Additional Considerations
 
+praveend$ ./macAudit.py -h
+usage: macAudit.py [-h] [-v] [-n]
+
+optional arguments:
+  -h, --help     show this help message and exit
+  -v, --verbose  increase output verbosity
+  -n, --nocolor  plain console output(default logging uses color)
+praveend$
+
+
+
 
