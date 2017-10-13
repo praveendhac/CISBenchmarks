@@ -3,34 +3,34 @@ Hardening audit scripts validating Workstations and Servers based on CIS benchma
 
 Center for Internet Security (CIS), http://benchmarks.cisecurity.org
 
-Bechmarks are based on
--Install Updates, Patches and Additional Security Software
--System Preferences
-    -Bluetooth
-    -Date & Time
-    -Desktop & Screen Saver
-    -Sharing
-    -Energy Saver
-    -Security & Privacy
-    -iCloud
-    -Time Machine
--Logging and Auditing
-    -Configure asl.conf
--Network Configurations
--System Access, Authentication and Authorization
-    -File System Permissions and Access Controls
-    -Password Management
--User Accounts and Environment
-    -Accounts Preferences Action Items
--Additional Considerations
+Bechmarks are based on<br/>
+-Install Updates, Patches and Additional Security Software<br/>
+-System Preferences<br/>
+    -Bluetooth<br/>
+    -Date & Time<br/>
+    -Desktop & Screen Saver<br/>
+    -Sharing<br/>
+    -Energy Saver<br/>
+    -Security & Privacy<br/>
+    -iCloud<br/>
+    -Time Machine<br/>
+-Logging and Auditing<br/>
+    -Configure asl.conf<br/>
+-Network Configurations<br/>
+-System Access, Authentication and Authorization<br/>
+    -File System Permissions and Access Controls<br/>
+    -Password Management<br/>
+-User Accounts and Environment<br/>
+    -Accounts Preferences Action Items<br/>
+-Additional Considerations<br/>
 
-praveend$ ./macAudit.py -h
-usage: macAudit.py [-h] [-v] [-n]
-
-optional arguments:
-  -h, --help     show this help message and exit
-  -v, --verbose  increase output verbosity
-  -n, --nocolor  plain console output(default logging uses color)
+praveend$ ./macAudit.py -h<br/>
+usage: macAudit.py [-h] [-v] [-n]<br/>
+<br/>
+optional arguments:<br/>
+  -h, --help     show this help message and exit<br/>
+  -v, --verbose  increase output verbosity<br/>
+  -n, --nocolor  plain console output(default logging uses color)<br/>
 praveend$
 
 
