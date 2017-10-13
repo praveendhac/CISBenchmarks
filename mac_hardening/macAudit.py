@@ -1196,7 +1196,7 @@ def sysAccess_Authen_Authoriz():
     cmd = ""
     n = exec_command(cmd)
 
-    compliance_check = "Do not enable the "root" account (Scored, Level 1)"
+    compliance_check = "Do not enable the \"root\" account (Scored, Level 1)"
     cmd = ""
     n = exec_command(cmd)
 
