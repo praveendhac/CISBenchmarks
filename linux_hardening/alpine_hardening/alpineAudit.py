@@ -47,245 +47,471 @@ def verbose_logs(info_str, op):
 def filesystem_config():
     global compliant_count
 
-    compliance_check = "Ensure mounting of cramfs filesystems is disabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure mounting of cramfs filesystems is disabled (Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v cramfs"
+    is_cramfs_mp_present = exec_command(cmd1)
+    cmd2 = "lsmod | grep cramfs"
+    is_cramfs_lm_present = exec_command(cmd2)
+    verbose_logs("Command used", cmd1 + cmd2)
+    verbose_logs("Command Output", is_cramfs_mp_present)
+    verbose_logs("Command Output", is_cramfs_lm_present)
+    verbose_logs("Expected output to be compliant","No output from above commands")
+    verbose_logs("To be compliant, run","Edit/Create /etc/modprobe.d/CIS.conf and add line \"install cramfs /bin/true\"")
+    if "cramfs.ko" in is_cramfs_mp_present:
+        if "EXCEPTION" in is_cramfs_lm_present:
+            update_compliance_status(compliance_check, "COMPLIANT")
+            compliant_count += 1
+        else:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+            compliant_count -= 1
+    else:
+        update_compliance_status(compliance_check, "COMPLIANT")
+        compliant_count += 1
 
-    compliance_check = "iEnsure mounting of freevxfs filesystems is disabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure mounting of freevxfs filesystems is disabled (Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v freevxfs"
+    is_freevxfs_mp_present = exec_command(cmd1)
+    cmd2 = "lsmod | grep freevxfs"
+    is_freevxfs_lm_present = exec_command(cmd2)
+    verbose_logs("Command used", cmd1 + cmd2)
+    verbose_logs("Command Output", is_freevxfs_mp_present)
+    verbose_logs("Command Output", is_freevxfs_lm_present)
+    verbose_logs("Expected output to be compliant","No output from above commands")
+    verbose_logs("To be compliant, run","Edit/Create /etc/modprobe.d/CIS.conf and add line \"install freevxfs /bin/true\"")
+    if "freevxfs.ko" in is_freevxfs_mp_present:
+        if "EXCEPTION" in is_freevxfs_lm_present:
+            update_compliance_status(compliance_check, "COMPLIANT")
+            compliant_count += 1
+        else:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+            compliant_count -= 1
+    else:
+        update_compliance_status(compliance_check, "COMPLIANT")
+        compliant_count += 1
 
-    compliance_check = "Ensure mounting of jffs2 filesystems is disabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure mounting of jffs2 filesystems is disabled (Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v jffs2"
+    is_jffs2_mp_present = exec_command(cmd1)
+    cmd2 = "lsmod | grep jffs2"
+    is_jffs2_lm_present = exec_command(cmd2)
+    verbose_logs("Command used", cmd1 + cmd2)
+    verbose_logs("Command Output", is_jffs2_mp_present)
+    verbose_logs("Command Output", is_jffs2_lm_present)
+    verbose_logs("Expected output to be compliant","No output from above commands")
+    verbose_logs("To be compliant, run","Edit/Create /etc/modprobe.d/CIS.conf and add line \"install jffs2 /bin/true\"")
+    if "jffs2.ko" in is_jffs2_mp_present:
+        if "EXCEPTION" in is_jffs2_lm_present:
+            update_compliance_status(compliance_check, "COMPLIANT")
+            compliant_count += 1
+        else:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+            compliant_count -= 1
+    else:
+        update_compliance_status(compliance_check, "COMPLIANT")
+        compliant_count += 1
 
-    compliance_check = "(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure mounting of hfs filesystems is disabled (Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v hfs"
+    is_hfs_mp_present = exec_command(cmd1)
+    cmd2 = "lsmod | grep hfs"
+    is_hfs_lm_present = exec_command(cmd2)
+    verbose_logs("Command used", cmd1 + cmd2)
+    verbose_logs("Command Output", is_hfs_mp_present)
+    verbose_logs("Command Output", is_hfs_lm_present)
+    verbose_logs("Expected output to be compliant","No output from above commands")
+    verbose_logs("To be compliant, run","Edit/Create /etc/modprobe.d/CIS.conf and add line \"install hfs /bin/true\"")
+    if "hfs.ko" in is_hfs_mp_present:
+        if "EXCEPTION" in is_hfs_lm_present:
+            update_compliance_status(compliance_check, "COMPLIANT")
+            compliant_count += 1
+        else:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+            compliant_count -= 1
+    else:
+        update_compliance_status(compliance_check, "COMPLIANT")
+        compliant_count += 1
 
-    compliance_check = "Ensure mounting of hfs filesystems is disabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure mounting of hfsplus filesystems is disabled (Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v hfsplus"
+    is_hfsplus_mp_present = exec_command(cmd1)
+    cmd2 = "lsmod | grep freevxfs"
+    is_hfsplus_lm_present = exec_command(cmd2)
+    verbose_logs("Command used", cmd1 + cmd2)
+    verbose_logs("Command Output", is_hfsplus_mp_present)
+    verbose_logs("Command Output", is_hfsplus_lm_present)
+    verbose_logs("Expected output to be compliant","No output from above commands")
+    verbose_logs("To be compliant, run","Edit/Create /etc/modprobe.d/CIS.conf and add line \"install hfsplus /bin/true\"")
+    if "hfsplus.ko" in is_hfsplus_mp_present:
+        if "EXCEPTION" in is_hfsplus_lm_present:
+            update_compliance_status(compliance_check, "COMPLIANT")
+            compliant_count += 1
+        else:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+            compliant_count -= 1
+    else:
+        update_compliance_status(compliance_check, "COMPLIANT")
+        compliant_count += 1
 
-    compliance_check = "Ensure mounting of hfsplus filesystems is disabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure mounting of squashfs filesystems is disabled (Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v squashfs"
+    is_squashfs_mp_present = exec_command(cmd1)
+    cmd2 = "lsmod | grep squashfs"
+    is_squashfs_lm_present = exec_command(cmd2)
+    verbose_logs("Command used", cmd1 + cmd2)
+    verbose_logs("Command Output", is_squashfs_mp_present)
+    verbose_logs("Command Output", is_squashfs_lm_present)
+    verbose_logs("Expected output to be compliant","No output from above commands")
+    verbose_logs("To be compliant, run","Edit/Create /etc/modprobe.d/CIS.conf and add line \"install squashfs /bin/true\"")
+    if "squashfs.ko" in is_squashfs_mp_present:
+        if "EXCEPTION" in is_squashfs_lm_present:
+            update_compliance_status(compliance_check, "COMPLIANT")
+            compliant_count += 1
+        else:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+            compliant_count -= 1
+    else:
+        update_compliance_status(compliance_check, "COMPLIANT")
+        compliant_count += 1
 
-    compliance_check = "Ensure mounting of squashfs filesystems is disabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure mounting of udf filesystems is disabled (Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v udf"
+    is_udf_mp_present = exec_command(cmd1)
+    cmd2 = "lsmod | grep udf"
+    is_udf_lm_present = exec_command(cmd2)
+    verbose_logs("Command used", cmd1 + cmd2)
+    verbose_logs("Command Output", is_udf_mp_present)
+    verbose_logs("Command Output", is_udf_lm_present)
+    verbose_logs("Expected output to be compliant","No output from above commands")
+    verbose_logs("To be compliant, run","Edit/Create /etc/modprobe.d/CIS.conf and add line \"install udf /bin/true\"")
+    if "udf.ko" in is_udf_mp_present:
+        if "EXCEPTION" in is_udf_lm_present:
+            update_compliance_status(compliance_check, "COMPLIANT")
+            compliant_count += 1
+        else:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+            compliant_count -= 1
+    else:
+        update_compliance_status(compliance_check, "COMPLIANT")
+        compliant_count += 1
 
-    compliance_check = "Ensure mounting of udf filesystems is disabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure mounting of FAT filesystems is disabled (Scored, Level 1 Server Level 2 Workstation)"
+    cmd1 = "modprobe -n -v vfat"
+    is_vfat_mp_present = exec_command(cmd1)
+    cmd2 = "lsmod | grep vfat"
+    is_vfat_lm_present = exec_command(cmd2)
+    verbose_logs("Command used", cmd1 + cmd2)
+    verbose_logs("Command Output", is_vfat_mp_present)
+    verbose_logs("Command Output", is_vfat_lm_present)
+    verbose_logs("Expected output to be compliant","No output from above commands")
+    verbose_logs("To be compliant, run","Edit/Create /etc/modprobe.d/CIS.conf and add line \"install vfat /bin/true\"")
+    if "vfat.ko" in is_vfat_mp_present:
+        if "EXCEPTION" in is_vfat_lm_present:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
 
-    compliance_check = "Ensure mounting of FAT filesystems is disabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure separate partition exists for /tmp (Scored, Level 2 Server and Workstation)"
+    cmd = "mount | grep /tmp"
+    is_tmpfs_partition_present = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure separate partition exists for /tmp (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_tmpfs_partition_present)
+    tmpfs_present = 0
+    verbose_logs("Expected output to be compliant","similar to \"tmpfs on /tmp type tmpfs (rw,nosuid,nodev,noexec,relatime)\"")
+    verbose_logs("To be compliant","For new systems create separate partition for /tmp. For previously installed systems, create a new partition and configure /etc/fstab as appropriate.")
+    if "/tmp " in is_tmpfs_partition_present:
+        tmpfs_present = 1
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure nodev option set on /tmp partition (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    verbose_logs("INFO", "nodev mount option specifies that the filesystem cannot contain special devices")
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_tmpfs_partition_present)
+    verbose_logs("Expected output to be compliant","verify that the nodev option is set on /tmp")
+    verbose_logs("To be compliant, run","mount -o remount,nodev /tmp")
+    if tmpfs_present:
+        if "nodev" in is_tmpfs_partition_present:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure nosuid option set on /tmp partition (Scored, Level 1 Server and Workstation)"
+    verbose_logs("INFO", "nosuid mount option specifies that the filesystem cannot contain setuid files")
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_tmpfs_partition_present)
+    verbose_logs("Expected output to be compliant","Verify that the nosuid option is set on /tmp")
+    verbose_logs("To be compliant, run","mount -o remount,nosuid /tmp")
+    if tmpfs_present:
+        if "nosuid" in is_tmpfs_partition_present:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure noexec option set on /tmp partition (Scored, Level 1 Server and Workstation)"
+    verbose_logs("INFO", "noexec mount option specifies that the filesystem cannot contain executable binaries")
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_tmpfs_partition_present)
+    verbose_logs("Expected output to be compliant","Verify that the noexec option is set on /tmp")
+    verbose_logs("To be compliant, run","mount -o remount,noexec /tmp")
+    if tmpfs_present:
+        if "noexec" in is_tmpfs_partition_present:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure separate partition exists for /var (Scored, Level 2 Server and Workstation)"
+    cmd = "mount | grep /var"
+    is_var_partition_present = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_var_partition_present)
+    verbose_logs("Expected output to be compliant","similar to \"/dev/xvdg1 on /var type ext4 (rw,relatime,data=ordered)\"")
+    verbose_logs("To be compliant","For new systems create separate partition for /var. For previously installed systems, create a new partition and configure /etc/fstab as appropriate.")
+    if "/var " in is_var_partition_present:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure separate partition exists for /var/tmp (Scored, Level 2 Server and Workstation)"
+    cmd = "mount | grep /var/tmp"
+    is_vartmp_partition_present = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_vartmp_partition_present)
+    vartmp_present = 0
+    verbose_logs("Expected output to be compliant","similar to \"tmpfs on /var/tmp type ext4 (rw,nosuid,nodev,noexec,relatime)\"")
+    verbose_logs("To be compliant","For new systems create separate partition for /var/tmp. For previously installed systems, create a new partition and configure /etc/fstab as appropriate.")
+    if "/var/tmp " in is_vartmp_partition_present:
+        vartmp_present = 1
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure nodev option set on /var/tmp partition (Scored, Level 1 Server and Workstation)"
+    verbose_logs("INFO", "nodev mount option specifies that the filesystem cannot contain special devices")
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_tmpfs_partition_present)
+    verbose_logs("Expected output to be compliant","verify that the nodev option is set on /var/tmp")
+    verbose_logs("To be compliant, run","mount -o remount,nodev /var/tmp")
+    if vartmp_present:
+        if "nodev" in is_vartmp_partition_present:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure nosuid option set on /var/tmp partition (Scored, Level 1 Server and Workstation)"
+    verbose_logs("INFO", "nosuid mount option specifies that the filesystem cannot contain setuid files")
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_vartmp_partition_present)
+    verbose_logs("Expected output to be compliant","Verify that the nosuid option is set on /var/tmp")
+    verbose_logs("To be compliant, run","mount -o remount,nosuid /var/tmp")
+    if vartmp_present:
+        if "nosuid" in is_vartmp_partition_present:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure noexec option set on /var/tmp partition (Scored, Level 1 Server and Workstation)"
+    verbose_logs("INFO", "nosuid mount option specifies that the filesystem cannot contain setuid files")
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_tmpfs_partition_present)
+    verbose_logs("Expected output to be compliant","Verify that the nosuid option is set on /var/tmp")
+    verbose_logs("To be compliant, run","mount -o remount,nosuid /var/tmp")
+    if vartmp_present:
+        if "nosuid" in is_vartmp_partition_present:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure separate partition exists for /var/log (Scored, Level 2 Server and Workstation)"
+    cmd = "mount | grep /var/log"
+    is_varlog_partition_present = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_varlog_partition_present)
+    verbose_logs("Expected output to be compliant","similar to \"/dev/xvdh1 on /var/log type ext4 (rw,relatime,data=ordered)\"")
+    verbose_logs("To be compliant","For new systems create separate partition for /var/log. For previously installed systems, create a new partition and configure /etc/fstab as appropriate.")
+    if "/var/log " in is_varlog_partition_present:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure separate partition exists for /var/log/audit (Scored)(Not Scored, Level 2 Server and Workstation)"
+    cmd = "mount | grep /var/log/audit"
+    is_varlogaudit_partition_present = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_varlogaudit_partition_present)
+    verbose_logs("Expected output to be compliant","similar to \"/dev/xvdi1 on /var/log/audit type ext4 (rw,relatime,data=ordered)\"")
+    verbose_logs("To be compliant","For new systems create separate partition for /var/log/audit. For previously installed systems, create a new partition and configure /etc/fstab as appropriate.")
+    if "/var/log/audit " in is_varlogaudit_partition_present:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure separate partition exists for /home (Scored, Level 2 Server and Workstation)"
+    cmd = "mount | grep /home"
+    is_home_partition_present = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_home_partition_present)
+    home_present = 0
+    verbose_logs("Expected output to be compliant","similar to \"/dev/xvdf1 on /home type ext4 (rw,nodev,relatime,data=ordered)\"")
+    verbose_logs("To be compliant","For new systems create separate partition for /home. For previously installed systems, create a new partition and configure /etc/fstab as appropriate.")
+    if "/home " in is_home_partition_present:
+        home_present = 1
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure nodev option set on /home partition (Scored, Level 1 Server and Workstation)"
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_home_partition_present)
+    verbose_logs("Expected output to be compliant","nodev option set on /home. Set this option to ensure users cannot attempt to create block or character special devices")
+    verbose_logs("To be compliant, run","mount -o remount,nodev /home")
+    if home_present:
+        if "nodev" in is_home_partition_present:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure nodev option set on /dev/shm partition (Scored, Level 1 Server and Workstation)"
+    cmd = "mount | grep /dev/shm"
+    is_devshm_partition_present = exec_command(cmd)
+    verbose_logs("INFO","/dev/shm filesystem is not intended to support devices, prevent users creating special devices")
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_devshm_partition_present)
+    devshm_present = 0
+    verbose_logs("Expected output to be compliant","nodev option set on /home. Set this option to ensure users cannot attempt to create block or character special devices")
+    verbose_logs("To be compliant, run","mount -o remount,nodev /dev/shm")
+    if "/dev/shm " in is_devshm_partition_present:
+        devshm_present = 1
+
+    if devshm_present:
+        if ("nodev" in is_devshm_partition_present):
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure nosuid option set on /dev/shm partition (Scored, Level 1 Server and Workstation)"
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_devshm_partition_present)
+    verbose_logs("Expected output to be compliant","nosuid option set on /home. Set this option to ensure filesystem cannot contain setuid files, not-setting this option allows non-root users to execute privileged programs")
+    verbose_logs("To be compliant, run","mount -o remount,nosuid /dev/shm")
+    if devshm_present:
+        if ("nosuid" in is_devshm_partition_present):
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure noexec option set on /dev/shm partition (Scored, Level 1 Server and Workstation)"
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_devshm_partition_present)
+    verbose_logs("Expected output to be compliant","noexec option is set on /dev/shm")
+    verbose_logs("To be compliant, run","mount -o remount,noexec /dev/shm")
+    if devshm_present:
+        if ("noexec" in is_devshm_partition_present):
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure nodev option set on removable media partitions (Scored, Level 1 Server and Workstation)"
+    cmd = "mount |grep -i /dev"
+    is_removablemedia_present = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_removablemedia_present)
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure nosuid option set on /tmp partition (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure nosuid option set on removable media partitions (Scored, Level 1 Server and Workstation)"
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_removablemedia_present)
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure noexec option set on /tmp partition (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure noexec option set on removable media partitions (Scored, Level 1 Server and Workstation)"
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_removablemedia_present)
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
+    #TODO Removable media ^^. blkid cmd might be useful
 
-    compliance_check = "Ensure separate partition exists for /var (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure sticky bit is set on all world-writable directories (Scored, Level 1 Server and Workstation)"
+    cmd = "df -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d \( -perm -0002 -a ! -perm -1000 \) 2>/dev/null"
+    is_sb_wwf = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure separate partition exists for /var/tmp (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure nodev option set on /var/tmp partition (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure nosuid option set on /var/tmp partition (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure noexec option set on /var/tmp partition (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure separate partition exists for /var/log (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure separate partition exists for /var/log/audit (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure separate partition exists for /home (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure nodev option set on /home partition (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure nodev option set on /dev/shm partition (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure nosuid option set on /dev/shm partition (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure noexec option set on /dev/shm partition (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure nodev option set on removable media partitions (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure nosuid option set on removable media partitions (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure noexec option set on removable media partitions (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure sticky bit is set on all world-writable directories (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_sb_wwf)
+    verbose_logs("Expected output to be compliant","No output should be returned")
+    verbose_logs("To be compliant, run","df -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | chmod a+t")
+    if "EXCEPTION" in is_sb_wwf:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Disable Automounting (Scored)(Not Scored, Level 1)"
     cmd = ""
