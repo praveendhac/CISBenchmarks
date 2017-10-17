@@ -533,8 +533,8 @@ def config_swUpdates():
     global compliant_count
 
     compliance_check = "Ensure package manager repositories are configured (Not Scored, Level 1 Server and Workstation)"
-    is_apk_policy_present = "apk policy"
-    repo_config = exec_command(cmd)
+    cmd = "apk policy"
+    is_apk_policy_present = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_apk_policy_present)
     verbose_logs("Expected output to be compliant","Verify package repositories are configured correctly")
@@ -597,7 +597,7 @@ def fs_integrity_checking():
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-def secBoot_settings():
+def sec_boot_settings():
     global compliant_count
     compliance_check = "Ensure permissions on bootloader config are configured (Scored, Level 1 Server and Workstation)"
     cmd = "stat /boot/grub/menu.lst"
@@ -629,55 +629,102 @@ def secBoot_settings():
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure authentication required for single user mode (Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "grep \"/sbin/sulogin\" /etc/inittab"
+    auth_sum = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", auth_sum)
+    verbose_logs("Expected output to be compliant","similar to \"~~:S:respawn:/sbin/sulogin\"")
+    verbose_logs("To be compliant, run","configure single user mode to require a password for login as appropriate")
+    if ":S:respawn:/sbin/sulogin" in auth_sum:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure interactive boot is not enabled (Not Scored)(Not Scored, Level 1)"
-    cmd = "grep \"^password\" /boot/grub/menu.lst"
-    n = exec_command(cmd)
+    compliance_check = "Ensure interactive boot is not enabled (Not Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^PROMPT_FOR_CONFIRM=\" /etc/sysconfig/boot"
+    is_iboot_enabled = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_iboot_enabled)
+    verbose_logs("Expected output to be compliant","PROMPT_FOR_CONFIRM=\"no\"")
+    verbose_logs("To be compliant, check","if interactive boot is available disable it.")
+    iboot_no = re.match(r'^PROMPT_FOR_CONFIRM="(.*?)".*?',is_iboot_enabled, re.I|re.M)
+    if iboot_no:
+        if "no" in iboot_no.group(1):
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def process_hardening():
     global compliant_count
 
-    compliance_check = "Ensure core dumps are restricted (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure core dumps are restricted (Scored, Level 1 Server and Workstation)"
+    cmd1 = "grep -r \"hard core\" /etc/security/limits.conf /etc/security/limits.d/"
+    #cmd1 = "grep \"hard core\" /etc/security/limits.conf"
+    is_limits_set = exec_command(cmd1)
+    verbose_logs("Command used", cmd1)
+    verbose_logs("Command Output", is_limits_set)
+    verbose_logs("Expected output to be compliant","* hard core 0")
+    verbose_logs("To be compliant, run","Edit /etc/security/limits.conf file or a /etc/security/limits.d/* file by adding \"* hard core 0\"")
+    hard_core_0 = re.match(r'.*?\*\s+hard\s+core\s+0.*?',is_limits_set,re.I|re.M)
 
-    compliance_check = "Ensure XD/NX support is enabled (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd2 = "sysctl fs.suid_dumpable"
+    sysctl_suiddump = exec_command(cmd2)
+    verbose_logs("Command used", cmd2)
+    verbose_logs("Command Output", sysctl_suiddump)
+    verbose_logs("Expected output to be compliant","fs.suid_dumpable = 0")
+    verbose_logs("To be compliant, run","Set \"fs.suid_dumpable = 0\" in /etc/sysctl.conf. Run \"sysctl -w fs.suid-dumpable=1\"to set the active kernel parameter")
+    is_suid_dumpable = re.match(r'fs\.suid_dumpable\s*=\s*0',sysctl_suiddump,re.I|re.M)
+    if hard_core_0 and is_suid_dumpable:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure XD/NX support is enabled (Not Scored, Level 1 Server and Workstation)"
+    cmd = "dmesg | grep NX"
+    is_NX_active = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_NX_active)
+    verbose_logs("Expected output to be compliant","NX (Execute Disable) protection: active")
+    verbose_logs("To be compliant, run","enable NX or XD support in your bios")
+    if ("NX " in is_NX_active) and (" active" in is_NX_active):
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure address space layout randomization (ASLR) is enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "sysctl kernel.randomize_va_space"
+    is_aslr_set = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
+    verbose_logs("Command Output", is_aslr_set)
+    verbose_logs("Expected output to be compliant","kernel.randomize_va_space = 2")
+    verbose_logs("To be compliant, run","\"sysctl -w kernel.randomize_va_space=2\" or edit /etc/sysctl.conf and add kernel.randomize_va_space = 2")
+    if ("kernel.randomize_va_space" in is_aslr_set) and (" 2" in is_aslr_set):
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure prelink is disabled (Scored)(Not Scored, Level 1)"
+    cmd = ""
+    is_prelink_disabled = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_prelink_disabled)
+    verbose_logs("Expected output to be compliant","Verify prelink is not installed")
     verbose_logs("To be compliant, run","")
 
     compliance_check = "Ensure prelink is disabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
 
 def mandatory_access_control():
     global compliant_count
@@ -2220,8 +2267,8 @@ if __name__ == "__main__":
     verbose_logs("RECOMMENDATION SECTION","Initial Setup")
     filesystem_config()
     config_swUpdates()
-    fsIntegrity_checking()
-    secBoot_settings()
+    fs_integrity_checking()
+    sec_boot_settings()
     process_hardening()
     mandatory_access_control()
     warning_banners()
