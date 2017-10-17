@@ -500,13 +500,14 @@ def filesystem_config():
     #TODO Removable media ^^. blkid cmd might be useful
 
     compliance_check = "Ensure sticky bit is set on all world-writable directories (Scored, Level 1 Server and Workstation)"
-    cmd = "df -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d \( -perm -0002 -a ! -perm -1000 \) 2>/dev/null"
+    cmd = "df -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d \\( -perm -0002 -a ! -perm -1000 \\)"
     is_sb_wwf = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_sb_wwf)
     verbose_logs("Expected output to be compliant","No output should be returned")
     verbose_logs("To be compliant, run","df -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | chmod a+t")
-    if "EXCEPTION" in is_sb_wwf:
+    print "len(is_sb_wwf):", len(is_sb_wwf), "is_sb_wwf:", is_sb_wwf
+    if "EXCEPTION" in is_sb_wwf or len(is_sb_wwf) <1:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
@@ -514,70 +515,120 @@ def filesystem_config():
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Disable Automounting (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    #command similar to "chkconfig --list autofs" on alpine
+    cmd = "rc-status -a | grep -i autofs"
+    proc_status_rlevels = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", proc_status_rlevels)
+    verbose_logs("Expected output to be compliant","autofs is not available")
+    verbose_logs("To be compliant, run","rc-service autofs stop")
+    if "EXCEPTION" in proc_status_rlevels or len(proc_status_rlevels) <1:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def config_swUpdates():
     global compliant_count
 
-    compliance_check = "Ensure package manager repositories are configured (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure package manager repositories are configured (Not Scored, Level 1 Server and Workstation)"
+    is_apk_policy_present = "apk policy"
+    repo_config = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_apk_policy_present)
+    verbose_logs("Expected output to be compliant","Verify package repositories are configured correctly")
+    verbose_logs("To be compliant","Configure your package manager repositories according to site policy.")
+    if "EXCEPTION" in is_apk_policy_present:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+        
 
-    compliance_check = "Ensure GPG keys are configured (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure GPG keys are configured (Not Scored, Level 1 Server and Workstation)"
+    cmd = "TODO: DID NOT FIND SPECIFIC COMMAND"
+    #repo_gpgkeys_config = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
+    #verbose_logs("Command Output", repo_gpgkeys_config)
+    verbose_logs("Expected output to be compliant","Verify GPG keys are configured correctly for your package manager")
     verbose_logs("To be compliant, run","")
+    """
+    if "EXCEPTION" in is_apk_policy_present:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    """
 
 def fs_integrity_checking():
     global compliant_count
 
-    compliance_check = "Ensure AIDE is installed (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure AIDE is installed (Scored, Level 1 Server and Workstation)"
+    #AIDE not present on Alpine release 3.6.2. inotifyd is inbuild FIM
+    cmd = "ps | grep -i inotifyd"
+    is_inotifyd_running = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_inotifyd_running)
+    verbose_logs("Expected output to be compliant","inotifyd or similar FIM tools must be running")
+    verbose_logs("To be compliant, run","inotifyd on sensitive files")
+    inotifyd_proc = is_inotifyd_running.split('\n')
+    if len(inotifyd_proc) >=2:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure filesystem integrity is regularly checked (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure filesystem integrity is regularly checked (Scored, Level 1 Server and Workstation)"
+    cmd = "crontab -u root -l | grep inotifyd"
+    is_fim_cron_present = exec_command(cmd)
+    #also run, "grep -r aide /etc/cron.* /etc/crontab"
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_fim_cron_present)
+    verbose_logs("Expected output to be compliant","inotifyd or similar FIM tools configured as cron job")
+    verbose_logs("To be compliant, run","\"crontab -u root -e\" and add \"0 5 * * * /usr/sbin/aide --check\" to crontab")
+    if "inotifyd" in is_fim_cron_present:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def secBoot_settings():
     global compliant_count
-    compliance_check = "Ensure permissions on bootloader config are configured (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure permissions on bootloader config are configured (Scored, Level 1 Server and Workstation)"
+    cmd = "stat /boot/grub/menu.lst"
+    bootloader_perm = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", bootloader_perm)
+    # Access: (0600/-rw-------) Uid: ( 0/ root) Gid: ( 0/ root)
+    verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access does not grant permissions to group or other")
+    verbose_logs("To be compliant, run","\"chown root:root /boot/grub/menu.lst\",\"chmod og-rwx /boot/grub/menu.lst\"")
+    check_stat_match = re.match(r'.*?Access:\s*\(\d{4}....------\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\)',bootloader_perm, re.I|re.M)
+    if check_stat_match:
+        print "check_stat_match.groups():", check_stat_match.groups()
+        print "check_stat_match.group(1):", check_stat_match.group(1)
+        print "check_stat_match.groups(2):", check_stat_match.group(2)
+    #TODO
 
-    compliance_check = "Ensure bootloader password is set (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure bootloader password is set (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^password\" /boot/grub/menu.lst"
+    bootloader_password = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", bootloader_password)
     verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("To be compliant, run","generate <encrypted-password> for grub/grub2 using command grub-md5-crypt/grub-mkpasswd-pbkdf2, paste it into the global section of /boot/grub/menu.lst as \"password --md5 <encrypted-password>\" and \"set superusers=\"<username>\"\" and \"password_pbkdf2 <username> <encrypted-password>\" for grub2 then run update-grub command")
+    if "password" in bootloader_password:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure authentication required for single user mode (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure authentication required for single user mode (Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -586,7 +637,7 @@ def secBoot_settings():
     verbose_logs("To be compliant, run","")
 
     compliance_check = "Ensure interactive boot is not enabled (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
+    cmd = "grep \"^password\" /boot/grub/menu.lst"
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", )
