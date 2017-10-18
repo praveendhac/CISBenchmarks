@@ -990,16 +990,16 @@ def warning_banners():
 def inetd_services():
     global compliant_count
 
-    compliance_check = "Ensure chargen services are not enabled (Scored, Level 1)"
+    compliance_check = "Ensure chargen services are not enabled (Scored, Level 1 Server and Workstation)"
     #rc-status -a |grep -i chargen
     #rc-service chargen status
     #rc-service -l |grep chargen
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep -i chargen"
     is_chargen = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_chargen)
-    verbose_logs("Expected output to be compliant","Verify the chargen service is not enabled")
-    verbose_logs("To be compliant, run","rc-service chargen stop")
+    verbose_logs("Expected output to be compliant","Verify the chargen service is not enabled. Verify chargen-dgram and chargen-stream are off or missing")
+    verbose_logs("To be compliant, run","rc-service chargen stop; apk del chargen")
     if "chargen" in is_chargen:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
@@ -1007,96 +1007,124 @@ def inetd_services():
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure daytime services are not enabled (Scored, Level 1)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    compliance_check = "Ensure daytime services are not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -i daytime; rc-service -l |grep -i daytime"
     is_daytime = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_daytime)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Expected output to be compliant","Verify the daytime service is not enabled. Verify daytime-dgram and daytime-stream are off or missing")
+    verbose_logs("To be compliant, run","rc-service chargen stop; apk del daytime")
+    if "daytime" in is_daytime:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure discard services are not enabled (Scored)(Not Scored, Level 1)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    compliance_check = "Ensure discard services are not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -i discard; rc-service -l |grep -i discard"
     is_discard = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_discard)
+    verbose_logs("Expected output to be compliant","Verify the discard service is not enabled. Verify discard-dgram and discard-stream are off or missing")
+    verbose_logs("To be compliant, run","rc-service discard stop and apk del discard")
+    if "discard" in is_discard:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure echo services are not enabled (Scored)(Not Scored, Level 1)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
-    n = exec_command(cmd)
+    compliance_check = "Ensure echo services are not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -i echo; rc-service -l |grep -i echo"
+    is_echo = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_echo)
+    verbose_logs("Expected output to be compliant","Verify the echo service is not enabled. Verify echo-dgram and echo-stream are off or missing")
+    verbose_logs("To be compliant, run","rc-service echo stop; apk del echo")
+    if "echo" in is_echo:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure time services are not enabled (Scored)(Not Scored, Level 1)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    compliance_check = "Ensure time services are not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -i time; rc-service -l |grep -i time"
     is_time = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_time)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Expected output to be compliant","Verify the time service is not enabled. Verify time-dgram and time-stream are off or missing")
+    verbose_logs("To be compliant, run","rc-service time stop; apk del time")
+    if "time" in is_time:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure rsh services are not enabled (Scored)(Not Scored, Level 1)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
-    is_rsh = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", is_rsh)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure talk server is not enabled (Scored)Not Scored, Level 1)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
-    is_talk = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", is_talk)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure telnet server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
-    is_telnet = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", is_telnet)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure tftp server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    compliance_check = "Ensure tftp server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -i tftp; rc-service -l |grep -i tftp"
     is_tfpd = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_tfpd)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Expected output to be compliant","Verify tftp is off or missing")
+    verbose_logs("To be compliant, run","rc-service tftp stop; apk del tftp")
+    if "tftp" in is_tftp:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure xinetd is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    compliance_check = "Ensure xinetd is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -i xinetd; rc-service -l |grep xinetd"
+    #find / -name xinetd
     is_xinetd = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_xinetd)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Expected output to be compliant","Verify the xinetd service is not enabled. Verify xinetd are off or missing")
+    verbose_logs("To be compliant, run","rc-service xinetd stop; apk del xinetd")
+    if "xinetd" in is_xinetd:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def special_purpose_services():
     global compliant_count
 
-    compliance_check = "Ensure time synchronization is in use (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure time synchronization is in use (Not Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -i ntp; rc-service -l |grep -i ntp; rc-status -a |grep -i chrony; rc-service -l |grep -i chrony"
+    is_ntpd = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_ntpd)
+    verbose_logs("Expected output to be compliant","Verify either ntp or chrony is installed")
+    verbose_logs("To be compliant, run","apk add openntpd or apk add chrony")
+    if "ntpd" in is_ntpd or "chrony" in is_ntpd:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure ntp is configured (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
+    compliance_check = "Ensure ntp is configured (Scored, Level 1 Server and Workstation)"
+    cmd1 = "grep \"^restrict\" /etc/ntp.conf"
+    is_ntpd_restrict = exec_command(cmd1)
+    cmd2 = "grep \"^server\" /etc/ntp.conf"
+    is_ntpd_server = exec_command(cmd2)
+    verbose_logs("Command's used", cmd1+cmd2)
+    verbose_logs("Command Output", is_ntpd_restrict + is_ntpd_server)
+    verbose_logs("Expected output to be compliant","similar to \"restrict -4 default kod nomodify notrap nopeer noquery\" and \"server <remote-server>\"")
     verbose_logs("To be compliant, run","")
+    #"-u ntp:ntp" or ExecStart in /etc/init.d/ntpd
+    if "chargen" in is_chargen:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure chrony is configured (Scored)(Not Scored, Level 1)"
     cmd = ""
@@ -1233,6 +1261,48 @@ def special_purpose_services():
     verbose_logs("Command Output", )
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
+
+    compliance_check = "Ensure rsh services are not enabled (Scored)(Not Scored, Level 1)"
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_rsh = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_rsh)
+    verbose_logs("Expected output to be compliant","")
+    verbose_logs("To be compliant, run","")
+    if "chargen" in is_chargen:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure telnet server is not enabled (Scored)(Not Scored, Level 1)"
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_telnet = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_telnet)
+    verbose_logs("Expected output to be compliant","")
+    verbose_logs("To be compliant, run","")
+    if "chargen" in is_chargen:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure tftp server is not enabled (Scored)(Not Scored, Level 1)"
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_tfpd = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_tfpd)
+    verbose_logs("Expected output to be compliant","")
+    verbose_logs("To be compliant, run","")
+    if "chargen" in is_chargen:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def service_clients():
     global compliant_count
