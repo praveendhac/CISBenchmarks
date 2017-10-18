@@ -506,7 +506,6 @@ def filesystem_config():
     verbose_logs("Command Output", is_sb_wwf)
     verbose_logs("Expected output to be compliant","No output should be returned")
     verbose_logs("To be compliant, run","df -P | awk {'if (NR!=1) print $6'} | xargs -I '{}' find '{}' -xdev -type d -perm -0002 2>/dev/null | chmod a+t")
-    print "len(is_sb_wwf):", len(is_sb_wwf), "is_sb_wwf:", is_sb_wwf
     if "EXCEPTION" in is_sb_wwf or len(is_sb_wwf) <1:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
@@ -607,7 +606,7 @@ def sec_boot_settings():
     # Access: (0600/-rw-------) Uid: ( 0/ root) Gid: ( 0/ root)
     verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access does not grant permissions to group or other")
     verbose_logs("To be compliant, run","\"chown root:root /boot/grub/menu.lst\",\"chmod og-rwx /boot/grub/menu.lst\"")
-    check_stat_match = re.match(r'.*?Access:\s*\(\d{4}....------\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\)',bootloader_perm, re.I|re.M)
+    check_stat_match = re.match(r'.*?Access:\s*\(\d{4}....------\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\)',bootloader_perm, re.I|re.M|re.S)
     if check_stat_match:
         print "check_stat_match.groups():", check_stat_match.groups()
         print "check_stat_match.group(1):", check_stat_match.group(1)
@@ -702,7 +701,7 @@ def process_hardening():
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure address space layout randomization (ASLR) is enabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure address space layout randomization (ASLR) is enabled (Scored, Level 1 Server and Workstation)"
     cmd = "sysctl kernel.randomize_va_space"
     is_aslr_set = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -716,187 +715,316 @@ def process_hardening():
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure prelink is disabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
+    compliance_check = "Ensure prelink is disabled (Scored, Level 1 Server and Workstation)"
+    cmd = "apk info prelink"
     is_prelink_disabled = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_prelink_disabled)
     verbose_logs("Expected output to be compliant","Verify prelink is not installed")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure prelink is disabled (Scored)(Not Scored, Level 1)"
+    verbose_logs("To be compliant, run","apk del prelink")
+    if "prelink-" in is_prelink_disabled:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
 
 def mandatory_access_control():
     global compliant_count
 
-    compliance_check = "Ensure SELinux is not disabled in bootloader configuration (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SELinux is not disabled in bootloader configuration (Scored, Level 2 Server and Workstation)"
+    #check /boot/grub/menu.lst, /boot/grub/grub.cfg
+    #bootloader information, file -s /dev/sda
+    #SELinux may be disabled by changing 'selinux=1' to 'selinux=0'
+    #'enforcing=0' (which means permissive where denied actions are logged but still executed i.e. selinux policy is not enforced, but denials are logged)
+    #enforcing=1, selinux policy is enforced and denials are logged
+    cmd = "grep -iE \"^\s*(kernel|linux)\" /boot/grub/menu.lst |grep -iE \"selinux|enforcing\""
+    is_selinux_grub = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_selinux_grub)
+    cmd = "grep -iE \"selinux|enforcing\" /boot/extlinux.conf"
+    is_selinux_syslinux = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_selinux_syslinux)
+    verbose_logs("Expected output to be compliant","verify that no kernel line has the selinux=0 or enforcing=0 parameters set")
+    verbose_logs("To be compliant, run","Edit /boot/grub/menu.lst (grub), /etc/default/grub (grub2) and remove all instances of selinux=0 and enforcing=0 from all CMDLINE_LINUX parameters")
+    if "selinux=1" in is_selinux_grub or "selinux=1" in is_selinux_syslinux:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure the SELinux state is enforcing (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SELinux policy is configured (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure the SELinux state is enforcing (Scored, Level 2 Server and Workstation)"
+    cmd = "grep SELINUX=enforcing /etc/selinux/config"
+    #can also be verified using sestatus command
+    is_selinux_enforced = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_selinux_enforced)
+    verbose_logs("Expected output to be compliant","SELINUX=enforcing")
+    verbose_logs("To be compliant, run","Edit /etc/selinux/config by adding SELINUX=enforcing")
+    if "SELINUX=enforcing" in is_selinux_enforced:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SETroubleshoot is not installed (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SELinux policy is configured (Scored, Level 2 Server and Workstation)"
+    cmd = "grep SELINUXTYPE=targeted /etc/selinux/config"
+    is_selinux_policy = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_selinux_policy)
+    verbose_logs("Expected output to be compliant","SELINUXTYPE=targeted or SELINUXTYPE=mls")
+    verbose_logs("To be compliant, run","Edit /etc/selinux/config by adding SELINUXTYPE=targeted")
+    if "SELINUXTYPE=targeted" in is_selinux_policy or "SELINUXTYPE=mls" in is_selinux_policy:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure the MCS Translation Service (mcstrans) is not installed (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SETroubleshoot is not installed (Scored, Level 2 Server)"
+    cmd = "apk info setroubleshoot"
+    is_setroubleshoot = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_setroubleshoot)
+    verbose_logs("Expected output to be compliant","Verify s etroubleshoot is not installed")
+    verbose_logs("To be compliant, run","Uninstall setroubleshoot using, apk del setroubleshoot")
+    if "setroubleshoot" in is_setroubleshoot:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
 
-    compliance_check = "Ensure no unconfined daemons exist (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure the MCS Translation Service (mcstrans) is not installed (Scored, Level 2 Server and Workstation)"
+    cmd = "apk info mcstrans"
+    is_mcstrans = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_mcstrans)
+    verbose_logs("Expected output to be compliant","Verify mcstrans is not installed")
+    verbose_logs("To be compliant, run","apk del mcstrans")
+    if "mcstrans" in is_mcstrans:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    
+    compliance_check = "Ensure no unconfined daemons exist (Scored, Level 2 Server and Workstation)"
+    cmd = "ps -eZ | egrep \"initrc\" | egrep -vw \"tr|ps|egrep|bash|awk\" | tr ':' ' ' |awk '{ print $NF }'"
+    no_uncofined_daemons = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", no_uncofined_daemons)
+    verbose_logs("Expected output to be compliant","verify not output is produced for executed command")
+    verbose_logs("To be compliant, run","Investigate any unconfined daemons found during the audit action")
+    if "EXCEPTION" in no_uncofined_daemons:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure AppArmor is not disabled in bootloader configuration (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure AppArmor is not disabled in bootloader configuration (Scored, Level 2 Server and Workstation)"
+    cmd = "grep -iE \"^\s*(kernel|linux)\" /boot/grub/menu.lst"
+    is_apparmor = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_apparmor)
     verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("To be compliant, run","Edit /boot/grub/menu.lst and remove apparmor=0 on all kernel/linux lines. Or change apparmor=0 to apparmor=1")
+    if "apparmor=0" in is_apparmor:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    
+    compliance_check = "Ensure all AppArmor Profiles are enforcing (Scored, Level 2 Server and Workstation)"
+    cmd = "apparmor_status"
+    apparmor_status = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", apparmor_status)
+    verbose_logs("Expected output to be compliant","Verify that profiles are loaded, no profiles are in complain mode, and no processes are unconfined")
+    verbose_logs("To be compliant, run","enforce /etc/apparmor.d/*")
 
-    compliance_check = "Ensure all AppArmor Profiles are enforcing (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SELinux or AppArmor are installed (Not Scored, Level 2 Server and Workstation)"
+    cmd = "apk info selinux && apk info apparmor"
+    is_selinux_apparmor_installed = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure SELinux or AppArmor are installed (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_selinux_apparmor_installed)
+    verbose_logs("Expected output to be compliant","Verify either SELinux or AppArmor is installed")
+    verbose_logs("To be compliant, run","apk add selinux && apk add apparmor")
+    if "selinux" in is_selinux_apparmor_installed or "apparmor" in is_selinux_apparmor_installed:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def warning_banners():
     global compliant_count
 
-    compliance_check = "Ensure message of the day is configured properly (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure message of the day is configured properly (Scored, Level 1 Server and Workstation)"
+    cmd = "cat /etc/motd"
+    #\m - machine architecture (uname -a); \r - operating system release (uname -r); \s - operating system name; \v - operating system version (uname -v)
+    #above options will work when there is mingetty(8) support
+    #cmd = "egrep '(\\v|\\r|\\m|\\s)' /etc/motd"
+    is_motd = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_motd)
+    verbose_logs("Expected output to be compliant","verify that the contents match Corporate policy")
+    verbose_logs("To be compliant, run","Edit /etc/motd file with the appropriate contents as per Corporate policy, remove instances of \m, \r, \s, or \v")
+    update_compliance_status(compliance_check, "MANUAL VERIFICATION NEEDED")
 
-    compliance_check = "Ensure local login warning banner is configured properly (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure local login warning banner is configured properly (Not Scored, Level 1 Server and Workstation)"
+    cmd = "cat /etc/issue"
+    is_loginbanner_present = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_loginbanner_present)
+    verbose_logs("Expected output to be compliant","Verify that the contents match Corporate policy. Remove OS, Kernel, Release, Architecture related information.")
+    verbose_logs("To be compliant, add","Authorized uses only. All activity may be monitored and reported instead of OS, Kernel, Release, Architecture related information.")
+    if "Welcome to Alpine Linux" in is_loginbanner_present:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    
+    compliance_check = "Ensure remote login warning banner is configured properly (Not Scored, Level 1 Server and Workstation)"
+    cmd = "cat /etc/issue.net"
+    is_rlogin_banner = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_rlogin_banner)
+    verbose_logs("Expected output to be compliant","Verify that the contents match Corporate policy. Remove OS, Kernel, Release, Architecture related information.")
+    verbose_logs("To be compliant, add","Authorized uses only. All activity may be monitored and reported instead of OS, Kernel, Release, Architecture related information.")
+    if "Welcome to Alpine Linux" in is_rlogin_banner:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    
 
-    compliance_check = "Ensure remote login warning banner is configured properly (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure permissions on /etc/motd are configured (Not Scored, Level 1 Server and Workstation)"
+    cmd = "stat /etc/motd"
+    motd_permissions = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", motd_permissions)
+    verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access is 644")
+    verbose_logs("To be compliant, run","chown root:root /etc/motd; chmod 644 /etc/motd")
+    #Access: (0644/-rw-r--r--)  Uid: (    0/    root)   Gid: (    0/    root)
+    stat_motd = re.match(r'((.*?Access:\s*\(.644/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\)))',motd_permissions, re.I|re.M|re.S)
+    if stat_motd:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure permissions on /etc/motd are configured (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure permissions on /etc/issue are configured (Scored, Level 1 Server and Workstation)"
+    cmd = "stat /etc/issue"
+    issue_permissions = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", issue_permissions)
+    verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access is 644")
+    verbose_logs("To be compliant, run","chown root:root /etc/issue; chmod 644 /etc/issue")
+    stat_issue = re.match(r'((.*?Access:\s*\(.644/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\)))',issue_permissions, re.I|re.M|re.S)
+    if stat_issue:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure permissions on /etc/issue are configured (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure permissions on /etc/issue.net are configured (Not Scored, Level 1 Server and Workstation)"
+    cmd = "stat /etc/issue.net"
+    issuenet_permissions = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", issuenet_permissions)
+    verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access is 644")
+    verbose_logs("To be compliant, run","chown root:root /etc/issue.net; chmod 644 /etc/issue.net")
+    stat_issuenet = re.match(r'((.*?Access:\s*\(.644/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\)))',issue_permissions, re.I|re.M|re.S)
+    if stat_issuenet:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure permissions on /etc/issue.net are configured (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure GDM login banner is configured (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure GDM login banner is configured (Scored, Level 1 Server and Workstation)"
+    #/root/xorg.conf.new; /etc/X11/xorg.conf; /etc/dconf/profile/gdm
+    cmd = "grep -riE \"banner-message-enable=true|banner-message-text=\" /root/xorg.conf.new /etc/X11/xorg.conf /etc/dconf/profile/gdm"
+    is_gdm_login = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_gdm_login)
+    verbose_logs("Expected output to be compliant","Verify the banner-message-enable and banner-message-text options are configured")
+    verbose_logs("To be compliant, run","Configure login banners as needed")
+    if "banner-message-enable=true" in is_gdm_login or "banner-message-text" in is_gdm_login:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure updates, patches, and additional security software are installed (Not Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure updates, patches, and additional security software are installed (Not Scored, Level 1 Server and Workstation)"
+    cmd1 = "apk update"
+    n = exec_command(cmd1)
+    cmd = "apk version"
+    apk_version = exec_command(cmd)
+    verbose_logs("Command used", cmd1 + cmd)
+    verbose_logs("Command Output", apk_version)
+    verbose_logs("Expected output to be compliant","Verify there are no updates or patches to install")
+    verbose_logs("To be compliant, run","apk add --upgrade <package_name>")
+    available_updates = apk_version.split('\n')
+    #print "len(available_updates):", len(available_updates), "available_updates:", available_updates
+    if len(available_updates) > 2:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def inetd_services():
     global compliant_count
 
     compliance_check = "Ensure chargen services are not enabled (Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    #rc-status -a |grep -i chargen
+    #rc-service chargen status
+    #rc-service -l |grep chargen
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_chargen = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_chargen)
+    verbose_logs("Expected output to be compliant","Verify the chargen service is not enabled")
+    verbose_logs("To be compliant, run","rc-service chargen stop")
+    if "chargen" in is_chargen:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure daytime services are not enabled (Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_daytime = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_daytime)
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
     compliance_check = "Ensure discard services are not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_discard = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", )
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
     compliance_check = "Ensure echo services are not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", )
@@ -904,50 +1032,50 @@ def inetd_services():
     verbose_logs("To be compliant, run","")
 
     compliance_check = "Ensure time services are not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_time = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_time)
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
     compliance_check = "Ensure rsh services are not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_rsh = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_rsh)
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "(Ensure talk server is not enabled (Scored)Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure talk server is not enabled (Scored)Not Scored, Level 1)"
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_talk = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_talk)
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
     compliance_check = "Ensure telnet server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_telnet = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_telnet)
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
     compliance_check = "Ensure tftp server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_tfpd = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_tfpd)
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
     compliance_check = "Ensure xinetd is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    is_xinetd = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_xinetd)
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
