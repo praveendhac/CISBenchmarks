@@ -827,19 +827,29 @@ def mandatory_access_control():
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
+    #bootloader: check /boot/grub/menu.lst (grub), /boot/grub/grub.cfg, /boot/extlinux.conf, /etc/default/grub (grub2)
     compliance_check = "Ensure AppArmor is not disabled in bootloader configuration (Scored, Level 2 Server and Workstation)"
-    cmd = "grep -iE \"^\s*(kernel|linux)\" /boot/grub/menu.lst"
-    is_apparmor = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", is_apparmor)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","Edit /boot/grub/menu.lst and remove apparmor=0 on all kernel/linux lines. Or change apparmor=0 to apparmor=1")
-    if "apparmor=0" in is_apparmor:
+    grub_file = ""
+    if os.path.isfile("/boot/grub/menu.lst"):
+        grub_file = "/boot/grub/menu.lst"
+    elif os.path.isfile("/boot/grub/grub.cfg"):
+        grub_file = "/boot/grub/grub.cfg"
+    if len(grub_file) > 4:
+        cmd = "grep -iE \"^\s*(kernel|linux)\"" + grub_file 
+        is_apparmor = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_apparmor)
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","Edit /boot/grub/menu.lst and remove apparmor=0 on all kernel/linux lines. Or change apparmor=0 to apparmor=1")
+        if "apparmor=0" in is_apparmor:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+    else:
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
-    else:
-        compliant_count += 1
-        update_compliance_status(compliance_check, "COMPLIANT")
     
     compliance_check = "Ensure all AppArmor Profiles are enforcing (Scored, Level 2 Server and Workstation)"
     cmd = "apparmor_status"
@@ -1284,7 +1294,7 @@ def special_purpose_services():
     verbose_logs("Command Output", is_dovecot)
     verbose_logs("Expected output to be compliant","Verify IMAP and POP3 Server is not running")
     verbose_logs("To be compliant, run","apk del devecot")
-    if "devecot" not in is_devecot:
+    if "dovecot" not in is_dovecot:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
@@ -1335,7 +1345,7 @@ def special_purpose_services():
         update_compliance_status(compliance_check, "NON-COMPLIANT")
     
     compliance_check = "Ensure mail transfer agent is configured for local-only mode (Scored, Level 1 Server and Workstation)"
-    cmd = "netstat -an | grep LIST | grep ":25 ""
+    cmd = "netstat -an | grep LIST | grep \":25 \""
     is_mta = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_mta)
@@ -1377,57 +1387,72 @@ def special_purpose_services():
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure telnet server is not enabled (Scored, Level 1 Server and Workstation)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    cmd = "ps |grep -i telnet |grep -iv grep; netstat -ant | grep \":23\""
     is_telnet = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_telnet)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-    if "chargen" in is_chargen:
+    verbose_logs("Expected output to be compliant","Verify telnet is not running")
+    verbose_logs("To be compliant, run","apk del telnet")
+    if "telnet" not in is_telnet and ":23" not in is_telnet:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure tftp server is not enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
-    is_tfpd = exec_command(cmd)
+    compliance_check = "Ensure tftp server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i tftp |grep -iv grep; netstat -anu | grep \":69\""
+    is_tftpd = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", is_tfpd)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-    if "chargen" in is_chargen:
+    verbose_logs("Command Output", is_tftpd)
+    verbose_logs("Expected output to be compliant","Verify tftp Server is not running")
+    verbose_logs("To be compliant, run","apk del tftpd")
+    if "tftp" not in is_tftpd and ":69" not in is_tftpd:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure rsync service is not enabled (Scored)Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure rsync service is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i rsync |grep -iv grep"
+    is_rsync = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-    if "xorg" not in is_xorg:
+    verbose_logs("Command Output", is_rsync)
+    verbose_logs("Expected output to be compliant","Verify rsync is not running")
+    verbose_logs("To be compliant, run","apk del rsync")
+    if "rsync" not in is_rsync:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure talk server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i talk |grep -iv grep"
+    is_talk = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_talk)
+    verbose_logs("Expected output to be compliant","Verify talk is not running")
+    verbose_logs("To be compliant, run","apk del talk")
+    if "talk" not in is_talk:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
 def service_clients():
     global compliant_count
 
-    compliance_check = "Ensure NIS Client is not installed (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure NIS Client is not installed (Scored, Level 1 Server and Workstation)"
+    cmd = "apk info |grep ypbind"
+    is_ypbind = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-    if "xorg" not in is_xorg:
+    verbose_logs("Command Output", is_ypbind)
+    verbose_logs("Expected output to be compliant","Verify ypbind (NIS Client) is not installed")
+    verbose_logs("To be compliant, run","apk del ypbind")
+    if "ypbind" not in is_ypbind:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
@@ -1435,165 +1460,310 @@ def service_clients():
         update_compliance_status(compliance_check, "NON-COMPLIANT")
     
     
-    compliance_check = "Ensure rsh client is not installed (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure rsh client is not installed (Scored, Level 1 Server and Workstation)"
+    cmd = "apk info |grep rsh"
+    is_rshc = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-    if "xorg" not in is_xorg:
+    verbose_logs("Command Output", is_rshc)
+    verbose_logs("Expected output to be compliant","Verify rsh is not installed")
+    verbose_logs("To be compliant, run","apk del rsh")
+    if "rsh" not in is_rshc:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-
-    compliance_check = "Ensure talk client is not installed (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure talk client is not installed (Scored, Level 1 Server and Workstation)"
+    cmd = "apk info |grep talk"
+    is_talkc = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_talkc)
+    verbose_logs("Expected output to be compliant","Verify talk is not installed")
+    verbose_logs("To be compliant, run","apk del talk")
+    if "talk" not in is_talkc:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure telnet client is not installed (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure telnet client is not installed (Scored, Level 1 Server and Workstation)"
+    cmd = "apk info |grep telnet"
+    is_telnetc = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_telnetc)
+    verbose_logs("Expected output to be compliant","Verify telnet is not installed")
+    verbose_logs("To be compliant, run","apk del telnet")
+    if "telnet" not in is_telnetc:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure LDAP client is not installed (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure LDAP client is not installed (Scored, Level 1 Server and Workstation)"
+    cmd = "apk info |grep openldap-clients"
+    is_ldapcli = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_ldapcli)
+    verbose_logs("Expected output to be compliant","Verify openldap-clients not installed")
+    verbose_logs("To be compliant, run","apk del openldap-clients")
+    if "openldap" not in is_ldapcli:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def networkParam_hostRouter():
     global compliant_count
 
-    compliance_check = "Ensure IP forwarding is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    #/etc/sysctl.d/00-alpine.conf
+    compliance_check = "Ensure IP forwarding is disabled (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv4.ip_forward"
+    is_ipforward = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_ipforward)
+    verbose_logs("Expected output to be compliant","net.ipv4.ip_forward = 0")
+    verbose_logs("To be compliant, run","Edit /etc/sysctl.conf or /etc/sysctl.d/00-alpine.conf and add net.ipv4.ip_forward = 0")
+    if "= 0" in is_ipforward:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure packet redirect sending is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure source routed packets are not accepted (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure packet redirect sending is disabled (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv4.conf.all.send_redirects"
+    is_send_redirects = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_send_redirects)
+    verbose_logs("Expected output to be compliant","net.ipv4.conf.all.send_redirects = 0")
+    cmd = "sysctl net.ipv4.conf.default.send_redirects"
+    is_def_send_redirects = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_def_send_redirects)
+    verbose_logs("Expected output to be compliant","net.ipv4.conf.default.send_redirects = 0")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv4.conf.all.send_redirects=0; sysctl -w net.ipv4.conf.default.send_redirects=0")
+    if "= 0" in is_send_redirects and "= 0" in is_def_send_redirects:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure ICMP redirects are not accepted (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure source routed packets are not accepted (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv4.conf.all.accept_source_route"
+    is_all_accept_source_route = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_all_accept_source_route)
+    cmd = "sysctl net.ipv4.conf.default.accept_source_route"
+    is_def_accept_source_route = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_def_accept_source_route)
+    verbose_logs("Expected output to be compliant","net.ipv4.conf.all.accept_source_route = 0 and net.ipv4.conf.default.accept_source_route = 0")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv4.conf.all.accept_source_route=0; sysctl -w net.ipv4.conf.default.accept_source_route=0")
+    if "= 0" in is_all_accept_source_route and "= 0" in is_def_accept_source_route:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure secure ICMP redirects are not accepted (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure ICMP redirects are not accepted (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv4.conf.all.accept_redirects"
+    is_all_accept_redirects = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_all_accept_redirects)
+    verbose_logs("Expected output to be compliant","net.ipv4.conf.all.accept_redirects = 0")
+    cmd = "sysctl net.ipv4.conf.default.accept_redirects"
+    is_def_accept_redirects = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_def_accept_redirects)
+    verbose_logs("To be compliant, run","sysctl -w net.ipv4.conf.all.accept_redirects=0; sysctl -w net.ipv4.conf.default.accept_redirects=0")
+    if "= 0" in is_all_accept_redirects and "= 0" in is_def_accept_redirects:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure suspicious packets are logged (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure secure ICMP redirects are not accepted (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv4.conf.all.secure_redirects"
+    is_all_secure_redirects = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_all_secure_redirects)
+    verbose_logs("Expected output to be compliant","net.ipv4.conf.all.secure_redirects = 0")
+    cmd = "sysctl net.ipv4.conf.default.secure_redirects"
+    is_def_secure_redirects = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_def_secure_redirects)
+    verbose_logs("Expected output to be compliant","net.ipv4.conf.default.secure_redirects = 0")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv4.conf.all.secure_redirects=0; sysctl -w net.ipv4.conf.default.secure_redirects=0")
+    if "= 0" in is_all_secure_redirects and "= 0" in is_def_secure_redirects:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure broadcast ICMP requests are ignored (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure suspicious packets are logged (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv4.conf.all.log_martians"
+    is_all_log_martians = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_all_log_martians)
+    verbose_logs("Expected output to be compliant","net.ipv4.conf.all.log_martians = 1")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv4.conf.all.log_martians=1")
+    cmd = "sysctl net.ipv4.conf.default.log_martians"
+    is_def_log_martians = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_def_log_martians)
+    verbose_logs("Expected output to be compliant","net.ipv4.conf.default.log_martians = 1")
+    if "= 1" in is_all_log_martians and "= 1" in is_def_log_martians:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure bogus ICMP responses are ignored (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure broadcast ICMP requests are ignored (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv4.icmp_echo_ignore_broadcasts"
+    is_icmp_echo_ignore_broadcasts = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_icmp_echo_ignore_broadcasts)
+    verbose_logs("Expected output to be compliant","net.ipv4.icmp_echo_ignore_broadcasts = 1")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv4.icmp_echo_ignore_broadcasts=1")
+    if "= 1" in is_icmp_echo_ignore_broadcasts:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure Reverse Path Filtering is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure bogus ICMP responses are ignored (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv4.icmp_ignore_bogus_error_responses"
+    is_icmp_ignore_bogus_error_responses = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_icmp_ignore_bogus_error_responses)
+    verbose_logs("Expected output to be compliant","net.ipv4.icmp_ignore_bogus_error_responses = 1")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv4.icmp_ignore_bogus_error_responses=1")
+    if "= 1" in is_icmp_ignore_bogus_error_responses:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure TCP SYN Cookies is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure Reverse Path Filtering is enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv4.conf.all.rp_filter"
+    is_all_rp_filter = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_all_rp_filter)
+    verbose_logs("Expected output to be compliant","net.ipv4.conf.all.rp_filter = 1")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv4.conf.all.rp_filter=1")
+    cmd = "sysctl net.ipv4.conf.default.rp_filter"
+    is_def_rp_filter = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_def_rp_filter)
+    verbose_logs("Expected output to be compliant","net.ipv4.conf.default.rp_filter = 1")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv4.conf.default.rp_filter=1")
+    if "= 1" in is_all_rp_filter and "= 1" in is_def_rp_filter:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure TCP SYN Cookies is enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv4.tcp_syncookies"
+    is_tcp_syncookies = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_tcp_syncookies)
+    verbose_logs("Expected output to be compliant","net.ipv4.tcp_syncookies = 1")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv4.tcp_syncookies=1")
+    if "= 1" in is_tcp_syncookies:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def ipv6():
     global compliant_count
 
-    compliance_check = "Ensure IPv6 router advertisements are not accepted (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure IPv6 router advertisements are not accepted (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv6.conf.all.accept_ra"
+    is_all_accept_ra = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_all_accept_ra)
+    verbose_logs("Expected output to be compliant","net.ipv6.conf.all.accept_ra = 0")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv6.conf.all.accept_ra=0")
+    cmd = "sysctl net.ipv6.conf.default.accept_ra"
+    is_def_accept_ra = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_def_accept_ra)
+    verbose_logs("Expected output to be compliant","net.ipv6.conf.default.accept_ra = 0")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv6.conf.default.accept_ra=0")
+    if "= 0" in is_all_accept_ra and "= 0" in is_def_accept_ra:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure IPv6 redirects are not accepted (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure IPv6 redirects are not accepted (Scored, Level 1 Server and Workstation)"
+    cmd = "sysctl net.ipv6.conf.all.accept_redirects"
+    is_all_accept_redirects6 = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_all_accept_redirects6)
+    verbose_logs("Expected output to be compliant","net.ipv6.conf.all.accept_redirect = 0")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv6.conf.all.accept_redirects=0")
+    cmd = "sysctl net.ipv6.conf.default.accept_redirects"
+    is_def_accept_redirects6 = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_def_accept_redirects6)
+    verbose_logs("Expected output to be compliant","net.ipv6.conf.default.accept_redirect = 0")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv6.conf.default.accept_redirects=0")
+    if "= 0" in is_all_accept_redirects6 and "= 0" in is_def_accept_redirects6:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure IPv6 is disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure IPv6 is disabled (Scored, Level 1 Server and Workstation)"
+    #cmd = "modprobe -c | grep ipv6"
+    cmd = "sysctl net.ipv6.conf.all.disable_ipv6"
+    is_disable_ipv6 = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_disable_ipv6)
+    verbose_logs("Expected output to be compliant","net.ipv6.conf.all.disable_ipv6 = 1")
+    verbose_logs("To be compliant, run","sysctl -w net.ipv6.conf.all.disable_ipv6 = 1")
+    if "= 1" in is_disable_ipv6:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def tcp_wrappers():
     global compliant_count
 
     compliance_check = "Ensure TCP Wrappers is installed (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "apk info |grep -i tcp_wrappers"
+    is_tcp_wrappers = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
+    verbose_logs("Command Output", is_tcp_wrappers)
+    verbose_logs("Expected output to be compliant","Verify tcp_wrappers is installed")
     verbose_logs("To be compliant, run","")
+    if "tcp_wrappers" in is_tcp_wrappers:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure /etc/hosts.allow is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
@@ -1602,6 +1772,12 @@ def tcp_wrappers():
     verbose_logs("Command Output", )
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
+    if "= 0" in is_ipforward:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure /etc/hosts.deny is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
