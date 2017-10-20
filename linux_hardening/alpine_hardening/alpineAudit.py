@@ -231,7 +231,7 @@ def filesystem_config():
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure nodev option set on /tmp partition (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure nodev option set on /tmp partition (Scored)(Not Scored, Level 1 Server and Workstation)"
     verbose_logs("INFO", "nodev mount option specifies that the filesystem cannot contain special devices")
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_tmpfs_partition_present)
@@ -513,7 +513,7 @@ def filesystem_config():
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Disable Automounting (Scored)(Not Scored, Level 1)"
+    compliance_check = "Disable Automounting (Scored)(Not Scored, Level 1 Server and Workstation)"
     #command similar to "chkconfig --list autofs" on alpine
     cmd = "rc-status -a | grep -i autofs"
     proc_status_rlevels = exec_command(cmd)
@@ -1000,7 +1000,7 @@ def inetd_services():
     verbose_logs("Command Output", is_chargen)
     verbose_logs("Expected output to be compliant","Verify the chargen service is not enabled. Verify chargen-dgram and chargen-stream are off or missing")
     verbose_logs("To be compliant, run","rc-service chargen stop; apk del chargen")
-    if "chargen" in is_chargen:
+    if "chargen" not in is_chargen:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
@@ -1014,7 +1014,7 @@ def inetd_services():
     verbose_logs("Command Output", is_daytime)
     verbose_logs("Expected output to be compliant","Verify the daytime service is not enabled. Verify daytime-dgram and daytime-stream are off or missing")
     verbose_logs("To be compliant, run","rc-service chargen stop; apk del daytime")
-    if "daytime" in is_daytime:
+    if "daytime" not in is_daytime:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
@@ -1028,7 +1028,7 @@ def inetd_services():
     verbose_logs("Command Output", is_discard)
     verbose_logs("Expected output to be compliant","Verify the discard service is not enabled. Verify discard-dgram and discard-stream are off or missing")
     verbose_logs("To be compliant, run","rc-service discard stop and apk del discard")
-    if "discard" in is_discard:
+    if "discard" not in is_discard:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
@@ -1042,7 +1042,7 @@ def inetd_services():
     verbose_logs("Command Output", is_echo)
     verbose_logs("Expected output to be compliant","Verify the echo service is not enabled. Verify echo-dgram and echo-stream are off or missing")
     verbose_logs("To be compliant, run","rc-service echo stop; apk del echo")
-    if "echo" in is_echo:
+    if "echo" not in is_echo:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
@@ -1056,7 +1056,7 @@ def inetd_services():
     verbose_logs("Command Output", is_time)
     verbose_logs("Expected output to be compliant","Verify the time service is not enabled. Verify time-dgram and time-stream are off or missing")
     verbose_logs("To be compliant, run","rc-service time stop; apk del time")
-    if "time" in is_time:
+    if "time" not in is_time:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
@@ -1065,12 +1065,12 @@ def inetd_services():
 
     compliance_check = "Ensure tftp server is not enabled (Scored, Level 1 Server and Workstation)"
     cmd = "rc-status -a |grep -i tftp; rc-service -l |grep -i tftp"
-    is_tfpd = exec_command(cmd)
+    is_tftpd = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", is_tfpd)
+    verbose_logs("Command Output", is_tftpd)
     verbose_logs("Expected output to be compliant","Verify tftp is off or missing")
     verbose_logs("To be compliant, run","rc-service tftp stop; apk del tftp")
-    if "tftp" in is_tftp:
+    if "tftp" not in is_tftpd:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
@@ -1085,7 +1085,7 @@ def inetd_services():
     verbose_logs("Command Output", is_xinetd)
     verbose_logs("Expected output to be compliant","Verify the xinetd service is not enabled. Verify xinetd are off or missing")
     verbose_logs("To be compliant, run","rc-service xinetd stop; apk del xinetd")
-    if "xinetd" in is_xinetd:
+    if "xinetd" not in is_xinetd:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
@@ -1110,173 +1110,273 @@ def special_purpose_services():
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure ntp is configured (Scored, Level 1 Server and Workstation)"
-    cmd1 = "grep \"^restrict\" /etc/ntp.conf"
-    is_ntpd_restrict = exec_command(cmd1)
-    cmd2 = "grep \"^server\" /etc/ntp.conf"
-    is_ntpd_server = exec_command(cmd2)
-    verbose_logs("Command's used", cmd1+cmd2)
-    verbose_logs("Command Output", is_ntpd_restrict + is_ntpd_server)
     verbose_logs("Expected output to be compliant","similar to \"restrict -4 default kod nomodify notrap nopeer noquery\" and \"server <remote-server>\"")
-    verbose_logs("To be compliant, run","")
-    #"-u ntp:ntp" or ExecStart in /etc/init.d/ntpd
-    if "chargen" in is_chargen:
+    verbose_logs("To be compliant (for openntpd)","Edit /etc/ntp.conf by adding restrict and server options and \"-u ntpd:ntpd\" option in command_args of /etc/init.d/ntpd")
+    verbose_logs("To be compliant (for chronyd)","Edit /etc/chrony/chrony.conf by adding restrict and server options and \"-u ntpd:ntpd\" option in command_args of /etc/init.d/chronyd")
+    if os.path.isfile("/etc/ntp.conf"):
+        cmdo1 = "grep \"^restrict\" /etc/ntp.conf"
+        is_ontpd_restrict = exec_command(cmdo1)
+        cmdo2 = "grep \"^server\" /etc/ntp.conf"
+        is_ontpd_server = exec_command(cmdo2)
+        verbose_logs("Command's used", cmdo1+cmdo2)
+        verbose_logs("Command Output", is_ontpd_restrict + is_ontpd_server)
+        is_ontpd_ntpd = exec_command("grep -i \"u ntpd:ntpd\" /etc/init.d/ntpd")
+        if "restrict" in is_ontpd_restrict and "server" in is_ontpd_server and "ntpd:ntpd" in is_ontpd_ntpd:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else: 
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure chrony is configured (Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/chrony/chrony.conf"):
+        cmdc1 = "grep \"^restrict\" /etc/chrony/chrony.conf"
+        is_cntpd_restrict = exec_command(cmdc1)
+        cmdc2 = "grep \"^server\" /etc/chrony/chrony.conf"
+        is_cntpd_server = exec_command(cmdc2)
+        verbose_logs("Command's used", cmdc1+cmdc2)
+        verbose_logs("Command Output", is_cntpd_restrict + is_cntpd_server)
+        is_cntpd_ntpd = exec_command("grep -i \"u ntpd:ntpd\" /etc/init.d/chronyd")
+        if "restrict" in is_cntpd_restrict and "server" in is_cntpd_server and "ntpd:ntpd" in is_cntpd_ntpd:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else: 
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+    compliance_check = "Ensure X Window System is not installed (Scored, Level 1 Server)"
+    cmd = "apk info |grep -i xorg"
+    is_xorg = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_xorg)
+    verbose_logs("Expected output to be compliant","verify no output is returned")
+    verbose_logs("To be compliant, run","apk del xorg")
+    if "xorg" not in is_xorg:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure Avahi Server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i avahi |grep -iv grep"
+    is_avahi = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", is_avahi)
+    verbose_logs("Expected output to be compliant","Verify avahi is not running")
+    verbose_logs("To be compliant, run","apk del avahi")
+    if "avahi" not in is_avahi:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure chrony is configured (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure CUPS is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i cups |grep -iv grep"
+    is_cups = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure X Window System is not installed (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    verbose_logs("Command Output", is_cups)
+    verbose_logs("Expected output to be compliant","Verify CUPS is not running")
+    verbose_logs("To be compliant, run","apk del cups")
+    if "cups" not in is_cups.lower():
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure DHCP Server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i dhcpd |grep -iv grep"
+    is_dhcpd = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure Avahi Server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    verbose_logs("Command Output", is_dhcpd)
+    verbose_logs("Expected output to be compliant","Verify DHCP Server is not running (udhcpd)")
+    verbose_logs("To be compliant, run","apk del dhcp")
+    if "dhcpd" not in is_dhcpd:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure LDAP server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -iE \"ldap|slapd\" |grep -iv grep"
+    is_ldap = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_ldap)
+    verbose_logs("Expected output to be compliant","Verify LDAP Server is not running")
+    verbose_logs("To be compliant, run","apk del openldap")
+    if "ldap" not in is_ldap and "slapd" not in is_ldap:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure CUPS is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure NFS and RPC are not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -iE \"nfs|rpc\" |grep -iv grep"
+    is_nfs_rpc = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_nfs_rpc)
+    verbose_logs("Expected output to be compliant","Verify NFS and RPC Servers is not running")
+    verbose_logs("To be compliant, run","apk del unfs3; apk del rpcbind")
+    if "unfs" not in is_nfs_rpc and "rpcbind" not in is_nfs_rpc:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure DHCP Server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure DNS Server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i dns |grep -iv grep"
+    is_dns = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_dns)
+    verbose_logs("Expected output to be compliant","Verify DNS Server is not running")
+    verbose_logs("To be compliant, run","apk del bind/udns/djbdns")
+    if "dns" not in is_dns:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
 
-    compliance_check = "Ensure LDAP server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure FTP Server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i ftp |grep -iv grep"
+    is_ftpd = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
+    verbose_logs("Command Output", is_ftpd)
+    verbose_logs("Expected output to be compliant","Verify FTP Server is not running")
     verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure NFS and RPC are not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    if "ftp" not in is_ftpd:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure HTTP server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -iE \"http|nginx\" |grep -iv grep"
+    is_http = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
+    verbose_logs("Command Output", is_http)
+    verbose_logs("Expected output to be compliant","Verify HTTP Server is not running")
     verbose_logs("To be compliant, run","")
+    if "http" not in is_http and "nginx" not in is_http:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure DNS Server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure IMAP and POP3 server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i dovecot |grep -iv grep"
+    is_dovecot = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_dovecot)
+    verbose_logs("Expected output to be compliant","Verify IMAP and POP3 Server is not running")
+    verbose_logs("To be compliant, run","apk del devecot")
+    if "devecot" not in is_devecot:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
 
-    compliance_check = "Ensure FTP Server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure Samba is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i samba |grep -iv grep"
+    is_samba = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
+    verbose_logs("Command Output", is_samba)
+    verbose_logs("Expected output to be compliant","Verify sanba Server is not running")
     verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure HTTP server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    if "samba" not in is_samba:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure HTTP Proxy Server is not enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i squid |grep -iv grep"
+    is_squid = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure IMAP and POP3 server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    verbose_logs("Command Output", is_squid)
+    verbose_logs("Expected output to be compliant","Verify squid is not running")
+    verbose_logs("To be compliant, run","apk del squid")
+    if "xorg" not in is_xorg:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure SNMP Server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i snmp |grep -iv grep"
+    is_snmp = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure Samba is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    verbose_logs("Command Output", is_snmp)
+    verbose_logs("Expected output to be compliant","Verify SNMP is not running")
+    verbose_logs("To be compliant, run","apk del net-snmp")
+    if "snmp" not in is_snmp:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure mail transfer agent is configured for local-only mode (Scored, Level 1 Server and Workstation)"
+    cmd = "netstat -an | grep LIST | grep ":25 ""
+    is_mta = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure HTTP Proxy Server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
+    verbose_logs("Command Output", is_mta)
+    verbose_logs("Expected output to be compliant","Verify MTA(say, postfix) is not running")
+    verbose_logs("To be compliant, run","apk del postfix. Edit /etc/postfix/main.cf and add \"inet_interfaces = localhost\" to RECEIVING MAIL section")
+    if "127.0.0." not in is_mta:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure NIS Server is not enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -i ypserv |grep -iv grep"
+    is_nis = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_nis)
+    verbose_logs("Expected output to be compliant","Verify NIS Server (say, ypserv) in not running")
+    verbose_logs("To be compliant, run","apk del ypserv")
+    if "ypserv" not in is_nis:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SNMP Server is not enabled (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "(Ensure mail transfer agent is configured for local-only mode (Scored)Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "(Ensure rsync service is not enabled (Scored)Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "(Ensure NIS Server is not enabled (Scored)Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure rsh services are not enabled (Scored)(Not Scored, Level 1)"
-    cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
+    compliance_check = "Ensure rsh services are not enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
+    cmd = "ps |grep -iE \"rsh|rlogin|rexec\" |grep -iv grep"
     is_rsh = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_rsh)
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-    if "chargen" in is_chargen:
+    verbose_logs("Expected output to be compliant","Verify rsh, rlogin and rexec are not running")
+    verbose_logs("To be compliant, run","apk del rsh/rlogin/rexec")
+    if "rsh" not in is_rsh and "rlogin" not in is_rsh and "rexec" not in is_rsh:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure telnet server is not enabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure telnet server is not enabled (Scored, Level 1 Server and Workstation)"
     cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
     is_telnet = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1290,7 +1390,7 @@ def special_purpose_services():
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure tftp server is not enabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure tftp server is not enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = "rc-status -a |grep -i chargen; rc-service -l |grep chargen"
     is_tfpd = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1304,18 +1404,53 @@ def special_purpose_services():
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
+    compliance_check = "Ensure rsync service is not enabled (Scored)Not Scored, Level 1 Server and Workstation)"
+    cmd = ""
+    n = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", )
+    verbose_logs("Expected output to be compliant","")
+    verbose_logs("To be compliant, run","")
+    if "xorg" not in is_xorg:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 def service_clients():
     global compliant_count
 
-    compliance_check = "Ensure NIS Client is not installed (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure NIS Client is not installed (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", )
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
+    if "xorg" not in is_xorg:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure rsh client is not installed (Scored)(Not Scored, Level 1)"
+    
+    compliance_check = "Ensure rsh client is not installed (Scored)(Not Scored, Level 1 Server and Workstation)"
+    cmd = ""
+    n = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", )
+    verbose_logs("Expected output to be compliant","")
+    verbose_logs("To be compliant, run","")
+    if "xorg" not in is_xorg:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+
+    compliance_check = "Ensure talk client is not installed (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1323,7 +1458,7 @@ def service_clients():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure talk client is not installed (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure telnet client is not installed (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1331,15 +1466,7 @@ def service_clients():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure telnet client is not installed (Scored)(Not Scored, Level 1)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure LDAP client is not installed (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure LDAP client is not installed (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1350,7 +1477,7 @@ def service_clients():
 def networkParam_hostRouter():
     global compliant_count
 
-    compliance_check = "Ensure IP forwarding is disabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure IP forwarding is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1358,7 +1485,7 @@ def networkParam_hostRouter():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure packet redirect sending is disabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure packet redirect sending is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1366,7 +1493,7 @@ def networkParam_hostRouter():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure source routed packets are not accepted (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure source routed packets are not accepted (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1374,7 +1501,7 @@ def networkParam_hostRouter():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure ICMP redirects are not accepted (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure ICMP redirects are not accepted (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1382,7 +1509,7 @@ def networkParam_hostRouter():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure secure ICMP redirects are not accepted (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure secure ICMP redirects are not accepted (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1390,7 +1517,7 @@ def networkParam_hostRouter():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure suspicious packets are logged (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure suspicious packets are logged (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1398,7 +1525,7 @@ def networkParam_hostRouter():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure broadcast ICMP requests are ignored (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure broadcast ICMP requests are ignored (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1406,7 +1533,7 @@ def networkParam_hostRouter():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure bogus ICMP responses are ignored (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure bogus ICMP responses are ignored (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1414,7 +1541,7 @@ def networkParam_hostRouter():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure Reverse Path Filtering is enabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure Reverse Path Filtering is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1422,7 +1549,7 @@ def networkParam_hostRouter():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure TCP SYN Cookies is enabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure TCP SYN Cookies is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1433,7 +1560,7 @@ def networkParam_hostRouter():
 def ipv6():
     global compliant_count
 
-    compliance_check = "Ensure IPv6 router advertisements are not accepted (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure IPv6 router advertisements are not accepted (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1441,7 +1568,7 @@ def ipv6():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure IPv6 redirects are not accepted (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure IPv6 redirects are not accepted (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1449,7 +1576,7 @@ def ipv6():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure IPv6 is disabled (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure IPv6 is disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1460,7 +1587,7 @@ def ipv6():
 def tcp_wrappers():
     global compliant_count
 
-    compliance_check = "Ensure TCP Wrappers is installed (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure TCP Wrappers is installed (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1468,7 +1595,7 @@ def tcp_wrappers():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure /etc/hosts.allow is configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure /etc/hosts.allow is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1476,7 +1603,7 @@ def tcp_wrappers():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure /etc/hosts.deny is configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure /etc/hosts.deny is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1484,7 +1611,7 @@ def tcp_wrappers():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure permissions on /etc/hosts.allow are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/hosts.allow are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1492,7 +1619,7 @@ def tcp_wrappers():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure permissions on /etc/hosts.deny are 644 (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/hosts.deny are 644 (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1502,7 +1629,7 @@ def tcp_wrappers():
 
 def uncommon_nwProtocols():
     global compliant_count
-    compliance_check = "Ensure DCCP is disabled (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure DCCP is disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1510,7 +1637,7 @@ def uncommon_nwProtocols():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SCTP is disabled (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SCTP is disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1518,7 +1645,7 @@ def uncommon_nwProtocols():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure RDS is disabled (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure RDS is disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1526,7 +1653,7 @@ def uncommon_nwProtocols():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure TIPC is disabled (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure TIPC is disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1537,7 +1664,7 @@ def uncommon_nwProtocols():
 def firewall_configuration():
     global compliant_count
 
-    compliance_check = "Ensure iptables is installed (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure iptables is installed (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1545,7 +1672,7 @@ def firewall_configuration():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure default deny firewall policy (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure default deny firewall policy (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1553,7 +1680,7 @@ def firewall_configuration():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure loopback traffic is configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure loopback traffic is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1561,7 +1688,7 @@ def firewall_configuration():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure outbound and established connections are configured (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure outbound and established connections are configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1569,7 +1696,7 @@ def firewall_configuration():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure firewall rules exist for all open ports (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure firewall rules exist for all open ports (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1577,7 +1704,7 @@ def firewall_configuration():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure wireless interfaces are disabled (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure wireless interfaces are disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1588,7 +1715,7 @@ def firewall_configuration():
 def config_sysAccounting():
     global compliant_count
 
-    compliance_check = "Configure System Accounting (auditd)(Not Scored, Level 1)"
+    compliance_check = "Configure System Accounting (auditd)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1596,7 +1723,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure audit log storage size is configured (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure audit log storage size is configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1604,7 +1731,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure system is disabled when audit logs are full (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure system is disabled when audit logs are full (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1612,7 +1739,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure audit logs are not automatically deleted (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure audit logs are not automatically deleted (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1620,7 +1747,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure auditd service is enabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure auditd service is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1628,7 +1755,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure auditing for processes that start prior to auditd is enabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure auditing for processes that start prior to auditd is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1636,7 +1763,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure events that modify date and time information are collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure events that modify date and time information are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1644,7 +1771,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure events that modify user/group information are collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure events that modify user/group information are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1652,7 +1779,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure events that modify the system's network environment are collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure events that modify the system's network environment are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1660,7 +1787,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure events that modify the system's Mandatory Access Controls are collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure events that modify the system's Mandatory Access Controls are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1668,7 +1795,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure login and logout events are collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure login and logout events are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1676,7 +1803,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure session initiation information is collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure session initiation information is collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1684,7 +1811,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure discretionary access control permission modification events are collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure discretionary access control permission modification events are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1692,7 +1819,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure unsuccessful unauthorized file access attempts are collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure unsuccessful unauthorized file access attempts are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1700,7 +1827,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure use of privileged commands is collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure use of privileged commands is collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1708,7 +1835,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure successful file system mounts are collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure successful file system mounts are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1716,7 +1843,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure file deletion events by users are collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure file deletion events by users are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1724,7 +1851,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure changes to system administration scope (sudoers) is collected(Not Scored, Level 1)"
+    compliance_check = "Ensure changes to system administration scope (sudoers) is collected(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1732,7 +1859,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure system administrator actions (sudolog) are collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure system administrator actions (sudolog) are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1740,7 +1867,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure kernel module loading and unloading is collected (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure kernel module loading and unloading is collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1748,7 +1875,7 @@ def config_sysAccounting():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure the audit configuration is immutable (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure the audit configuration is immutable (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1759,7 +1886,7 @@ def config_sysAccounting():
 def config_logging():
     global compliant_count
 
-    compliance_check = "Ensure rsyslog Service is enabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure rsyslog Service is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1767,7 +1894,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure logging is configured (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure logging is configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1775,7 +1902,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure rsyslog default file permissions configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure rsyslog default file permissions configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1783,7 +1910,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure rsyslog is configured to send logs to a remote log host (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure rsyslog is configured to send logs to a remote log host (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1791,7 +1918,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure remote rsyslog messages are only accepted on designated log hosts. (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure remote rsyslog messages are only accepted on designated log hosts. (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1799,7 +1926,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure syslog-ng service is enabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure syslog-ng service is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1807,7 +1934,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure logging is configured (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure logging is configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1815,7 +1942,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure syslog-ng default file permissions configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure syslog-ng default file permissions configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1823,7 +1950,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure syslog-ng is configured to send logs to a remote log host (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure syslog-ng is configured to send logs to a remote log host (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1831,7 +1958,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure remote syslog-ng messages are only accepted on designated log hosts (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure remote syslog-ng messages are only accepted on designated log hosts (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1839,7 +1966,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure rsyslog or syslog-ng is installed (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure rsyslog or syslog-ng is installed (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1847,7 +1974,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure permissions on all logfiles are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on all logfiles are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1855,7 +1982,7 @@ def config_logging():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure logrotate is configured (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure logrotate is configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1866,7 +1993,7 @@ def config_logging():
 def config_cron():
     global compliant_count
 
-    compliance_check = "(Not Scored, Level 1)"
+    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1874,7 +2001,7 @@ def config_cron():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "(Not Scored, Level 1)"
+    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1882,7 +2009,7 @@ def config_cron():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "(Not Scored, Level 1)"
+    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1890,7 +2017,7 @@ def config_cron():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "(Not Scored, Level 1)"
+    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1898,7 +2025,7 @@ def config_cron():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "(Not Scored, Level 1)"
+    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1906,7 +2033,7 @@ def config_cron():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "(Not Scored, Level 1)"
+    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1914,7 +2041,7 @@ def config_cron():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "(Not Scored, Level 1)"
+    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1922,7 +2049,7 @@ def config_cron():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "(Not Scored, Level 1)"
+    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1933,7 +2060,7 @@ def config_cron():
 def config_SSH():
     global compliant_count
 
-    compliance_check = "Ensure permissions on /etc/ssh/sshd_config are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/ssh/sshd_config are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1941,7 +2068,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH Protocol is set to 2 (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH Protocol is set to 2 (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1949,7 +2076,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH LogLevel is set to INFO (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH LogLevel is set to INFO (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1957,7 +2084,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH X11 forwarding is disabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH X11 forwarding is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1965,7 +2092,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH MaxAuthTries is set to 4 or less (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH MaxAuthTries is set to 4 or less (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1973,7 +2100,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH IgnoreRhosts is enabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH IgnoreRhosts is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1981,7 +2108,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH HostbasedAuthentication is disabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH HostbasedAuthentication is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1989,7 +2116,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH root login is disabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH root login is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -1997,7 +2124,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH PermitEmptyPasswords is disabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH PermitEmptyPasswords is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2005,7 +2132,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH PermitUserEnvironment is disabled (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH PermitUserEnvironment is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2013,7 +2140,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure only approved ciphers are used (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure only approved ciphers are used (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2021,7 +2148,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure only approved MAC algorithms are used (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure only approved MAC algorithms are used (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2029,7 +2156,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH Idle Timeout Interval is configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH Idle Timeout Interval is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2037,7 +2164,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH LoginGraceTime is set to one minute or less (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH LoginGraceTime is set to one minute or less (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2045,7 +2172,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH access is limited (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH access is limited (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2053,7 +2180,7 @@ def config_SSH():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH warning banner is configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure SSH warning banner is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2064,7 +2191,7 @@ def config_SSH():
 def config_PAM():
     global compliant_count
 
-    compliance_check = "Ensure password creation requirements are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure password creation requirements are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2072,7 +2199,7 @@ def config_PAM():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure lockout for failed password attempts is configured (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure lockout for failed password attempts is configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2080,7 +2207,7 @@ def config_PAM():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure password reuse is limited (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure password reuse is limited (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2088,7 +2215,7 @@ def config_PAM():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure password hashing algorithm is SHA-512 (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure password hashing algorithm is SHA-512 (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2099,7 +2226,7 @@ def config_PAM():
 def userAccounts_andEnvironment():
     global compliant_count
 
-    compliance_check = "Ensure password expiration is 90 days or less (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure password expiration is 90 days or less (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2107,7 +2234,7 @@ def userAccounts_andEnvironment():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure minimum days between password changes is 7 or more (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure minimum days between password changes is 7 or more (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2115,7 +2242,7 @@ def userAccounts_andEnvironment():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure password expiration warning days is 7 or more (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure password expiration warning days is 7 or more (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2123,7 +2250,7 @@ def userAccounts_andEnvironment():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure inactive password lock is 30 days or less (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure inactive password lock is 30 days or less (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2131,7 +2258,7 @@ def userAccounts_andEnvironment():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure system accounts are non-login (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure system accounts are non-login (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2139,7 +2266,7 @@ def userAccounts_andEnvironment():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure default group for the root account is GID 0 (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure default group for the root account is GID 0 (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2147,7 +2274,7 @@ def userAccounts_andEnvironment():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure default user umask is 027 or more restrictive (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure default user umask is 027 or more restrictive (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2155,7 +2282,7 @@ def userAccounts_andEnvironment():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure root login is restricted to system console (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure root login is restricted to system console (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2163,7 +2290,7 @@ def userAccounts_andEnvironment():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure access to the su command is restricted (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure access to the su command is restricted (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2174,7 +2301,7 @@ def userAccounts_andEnvironment():
 def sysFilePermissions():
     global compliant_count
 
-    compliance_check = "Audit system file permissions (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Audit system file permissions (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2182,7 +2309,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure permissions on /etc/passwd are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/passwd are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2190,7 +2317,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure permissions on /etc/shadow are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/shadow are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2198,7 +2325,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure permissions on /etc/group are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/group are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2206,7 +2333,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure permissions on /etc/gshadow are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/gshadow are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2214,7 +2341,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure permissions on /etc/passwd- are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/passwd- are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2222,7 +2349,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure permissions on /etc/shadow- are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/shadow- are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2230,7 +2357,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure permissions on /etc/group- are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/group- are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2238,7 +2365,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure permissions on /etc/gshadow- are configured (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure permissions on /etc/gshadow- are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2246,7 +2373,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure no world writable files exist (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no world writable files exist (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2254,7 +2381,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure no unowned files or directories exist (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no unowned files or directories exist (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2262,7 +2389,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure no ungrouped files or directories exist (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no ungrouped files or directories exist (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2270,7 +2397,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Audit SUID executables (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Audit SUID executables (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2278,7 +2405,7 @@ def sysFilePermissions():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Audit SGID executables (Not Scored)(Not Scored, Level 1)"
+    compliance_check = "Audit SGID executables (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2289,7 +2416,7 @@ def sysFilePermissions():
 def userGroupSettings():
     global compliant_count
 
-    compliance_check = "Ensure password fields are not empty (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure password fields are not empty (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2297,7 +2424,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure no legacy \"+\" entries exist in /etc/passwd (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no legacy \"+\" entries exist in /etc/passwd (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2305,7 +2432,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure no legacy \"+\" entries exist in /etc/shadow (Scored)(Scored, Level 1))"
+    compliance_check = "Ensure no legacy \"+\" entries exist in /etc/shadow (Scored)(Scored, Level 1 Server and Workstation))"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2313,7 +2440,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure no legacy \"+\" entries exist in /etc/group (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no legacy \"+\" entries exist in /etc/group (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2321,7 +2448,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "(Ensure root is the only UID 0 account (Scored)Not Scored, Level 1)"
+    compliance_check = "(Ensure root is the only UID 0 account (Scored)Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2329,7 +2456,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure root PATH Integrity (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure root PATH Integrity (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2337,7 +2464,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure all users' home directories exist (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure all users' home directories exist (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2345,7 +2472,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure users' home directories permissions are 750 or more restrictive (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure users' home directories permissions are 750 or more restrictive (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2353,7 +2480,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure users own their home directories (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure users own their home directories (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2361,7 +2488,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure users' dot files are not group or world writable (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure users' dot files are not group or world writable (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2369,7 +2496,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure no users have .forward files (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no users have .forward files (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2377,7 +2504,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure no users have .netrc files (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no users have .netrc files (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2385,7 +2512,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure users' .netrc Files are not group or world accessible (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure users' .netrc Files are not group or world accessible (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2393,7 +2520,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure no users have .rhosts files (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no users have .rhosts files (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2401,7 +2528,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure all groups in /etc/passwd exist in /etc/group (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure all groups in /etc/passwd exist in /etc/group (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2409,7 +2536,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure no duplicate UIDs exist (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no duplicate UIDs exist (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2417,7 +2544,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure no duplicate GIDs exist (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no duplicate GIDs exist (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2425,7 +2552,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure no duplicate user names exist (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no duplicate user names exist (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2433,7 +2560,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure no duplicate group names exist (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure no duplicate group names exist (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
@@ -2441,7 +2568,7 @@ def userGroupSettings():
     verbose_logs("Expected output to be compliant","")
     verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure shadow group is empty (Scored)(Not Scored, Level 1)"
+    compliance_check = "Ensure shadow group is empty (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
