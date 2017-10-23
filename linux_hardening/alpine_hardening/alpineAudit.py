@@ -1751,201 +1751,429 @@ def ipv6():
 def tcp_wrappers():
     global compliant_count
 
-    compliance_check = "Ensure TCP Wrappers is installed (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = "apk info |grep -i tcp_wrappers"
+    compliance_check = "Ensure TCP Wrappers is installed (Scored, Level 1 Server and Workstation)"
+    cmd = "apk info |grep -iE \"tcp(_|-)wrappers\""
     is_tcp_wrappers = exec_command(cmd)
     verbose_logs("Command used", cmd)
     verbose_logs("Command Output", is_tcp_wrappers)
     verbose_logs("Expected output to be compliant","Verify tcp_wrappers is installed")
     verbose_logs("To be compliant, run","")
-    if "tcp_wrappers" in is_tcp_wrappers:
+    if "tcp_wrappers" in is_tcp_wrappers or "tcp-wrappers" in is_tcp_wrappers:
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure /etc/hosts.allow is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-    if "= 0" in is_ipforward:
-        compliant_count += 1
-        update_compliance_status(compliance_check, "COMPLIANT")
+    compliance_check = "Ensure /etc/hosts.allow is configured (Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/hosts.allow"):
+        cmd = "cat /etc/hosts.allow"
+        hostsallow = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", hostsallow)
+        verbose_logs("Expected output to be compliant","Authorised IP Addresses are configured in the file")
+        verbose_logs("To be compliant, run","Edit /etc/hosts.allow by adding IP's and network blocks which need access to this system")
+        if len(hostsallow) >=12:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
     else:
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure /etc/hosts.deny is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure /etc/hosts.deny is configured (Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/hosts.deny"):
+        cmd = "cat /etc/hosts.deny"
+        hostsdeny = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", hostsdeny)
+        verbose_logs("Expected output to be compliant","Unauthorised IP Addresses are configured in the file")
+        verbose_logs("To be compliant, run","Edit /etc/hosts.deny by adding IP's and network blocks which are blocked from accessing the system")
+        if "ALL:" in hostsdeny:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure permissions on /etc/hosts.allow are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure permissions on /etc/hosts.allow are configured (Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/hosts.allow"):
+        cmd = "stat /etc/hosts.allow"
+        is_hostsallow = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access is 644")
+        verbose_logs("To be compliant, run","chmod 644 /etc/hosts.allow")
+        stat_hostsallow = re.match(r'((.*?Access:\s*\(.644/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\)))',is_hostsallow, re.I|re.M|re.S)
+        if stat_hostsallow:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure permissions on /etc/hosts.deny are 644 (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure permissions on /etc/hosts.deny are 644 (Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/hosts.deny"):
+        cmd = "stat /etc/hosts.deny"
+        is_hostsdeny = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access is 644")
+        verbose_logs("To be compliant, run","chmod 644 /etc/hosts.deny")
+        stat_hostsdeny = re.match(r'((.*?Access:\s*\(.644/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\)))',is_hostsdeny, re.I|re.M|re.S)
+        if stat_hostsdeny:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def uncommon_nwProtocols():
     global compliant_count
-    compliance_check = "Ensure DCCP is disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure DCCP is disabled (Not Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v dccp"
+    is_dccp_modprobe = exec_command(cmd1)
+    verbose_logs("Command used", cmd1)
+    cmd2 = "lsmod | grep dccp"
+    is_dccp_lsmod = exec_command(cmd2)
+    verbose_logs("Command used", cmd2)
+    verbose_logs("Command Output", is_dccp_modprobe + is_dccp_lsmod)
+    verbose_logs("Expected output to be compliant","No output from lsmod command")
+    verbose_logs("To be compliant, run","Edit or create the file /etc/modprobe.d/CIS.conf and add \"install dccp /bin/true\"")
+    if "dccp" not in is_dccp_lsmod:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SCTP is disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure SCTP is disabled (Not Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v sctp"
+    is_sctp_modprobe = exec_command(cmd1)
+    verbose_logs("Command used", cmd1)
+    cmd2 = "lsmod | grep sctp"
+    is_sctp_lsmod = exec_command(cmd2)
+    verbose_logs("Command used", cmd2)
+    verbose_logs("Command Output", is_sctp_modprobe + is_sctp_lsmod)
+    verbose_logs("Expected output to be compliant","No output from lsmod command")
+    verbose_logs("To be compliant, run","Edit or create the file /etc/modprobe.d/CIS.conf and add \"install sctp /bin/true\"")
+    if "sctp" not in is_sctp_lsmod:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure RDS is disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure RDS is disabled (Not Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v rds"
+    is_rds_modprobe = exec_command(cmd1)
+    verbose_logs("Command used", cmd1)
+    cmd2 = "lsmod | grep rds"
+    is_rds_lsmod = exec_command(cmd2)
+    verbose_logs("Command used", cmd2)
+    verbose_logs("Command Output", is_rds_modprobe + is_rds_lsmod)
+    verbose_logs("Expected output to be compliant","No output from lsmod command")
+    verbose_logs("To be compliant, run","Edit or create the file /etc/modprobe.d/CIS.conf and add \"install rds /bin/true\"")
+    if "rds" not in is_rds_lsmod:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure TIPC is disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure TIPC is disabled (Not Scored, Level 1 Server and Workstation)"
+    cmd1 = "modprobe -n -v tipc"
+    is_tipc_modprobe = exec_command(cmd1)
+    verbose_logs("Command used", cmd1)
+    cmd2 = "lsmod | grep tipc"
+    is_tipc_lsmod = exec_command(cmd2)
+    verbose_logs("Command used", cmd2)
+    verbose_logs("Command Output", is_tipc_modprobe + is_tipc_lsmod)
+    verbose_logs("Expected output to be compliant","No output from lsmod command")
+    verbose_logs("To be compliant, run","Edit or create the file /etc/modprobe.d/CIS.conf and add \"install tipc /bin/true\"")
+    if "tipc" not in is_tipc_lsmod:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def firewall_configuration():
     global compliant_count
 
-    compliance_check = "Ensure iptables is installed (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure iptables is installed (Scored, Level 1 Server and Workstation)"
+    cmd = "apk info |grep -i iptables"
+    is_iptables = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_iptables)
+    verbose_logs("Expected output to be compliant","Verify iptables is installed")
+    verbose_logs("To be compliant, run","apk add iptables")
+    if "iptables" in is_iptables:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure default deny firewall policy (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure default deny firewall policy (Scored, Level 1 Server and Workstation)"
+    cmd = "iptables -L"
+    all_iptables_acls = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", all_iptables_acls)
+    verbose_logs("Expected output to be compliant","Verify that the policy for the INPUT, OUTPUT, and FORWARD chains is DROP or REJECT")
+    verbose_logs("To be compliant, run","iptables -P INPUT DROP; iptables -P OUTPUT DROP; iptables -P FORWARD DROP")
+    is_in_defdrop = re.match(r'.*?Chain INPUT (policy DROP).*?',all_iptables_acls,re.I|re.M|re.S)
+    is_out_defdrop = re.match(r'.*?Chain\s+OUTPUT\s+\(policy\s+DROP\).*?',all_iptables_acls,re.I|re.M|re.S)
+    is_for_defdrop = re.match(r'.*?Chain\s+FORWARD\s+\(policy\s+DROP\).*?',all_iptables_acls,re.I|re.M|re.S)
+    if is_in_defdrop and is_out_defdrop and is_for_defdrop:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure loopback traffic is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure loopback traffic is configured (Scored, Level 1 Server and Workstation)"
+    cmd = "iptables -L INPUT -v -n"
+    is_iptables_lo = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_iptables_lo)
+    verbose_logs("Expected output to be compliant","loopback interface is the only place that loopback network (127.0.0.0/8) traffic should be seen, all other interfaces should ignore traffic on this network as an anti-spoofing measure")
+    verbose_logs("To be compliant, run","iptables -A INPUT -i lo -j ACCEPT; iptables -A OUTPUT -o lo -j ACCEPT; iptables -A INPUT -s 127.0.0.0/8 -j DROP")
+    if "127.0.0.0/8" in is_iptables_lo:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure outbound and established connections are configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure outbound and established connections are configured (Not Scored, Level 1 Server and Workstation)"
+    cmd = "iptables -L -v -n"
+    is_iptables_out_in = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
+    verbose_logs("Command Output", is_iptables_out_in)
+    verbose_logs("Expected output to be compliant","verify all rules for new outbound, and established connections match Corporate policy")
     verbose_logs("To be compliant, run","")
+    update_compliance_status(compliance_check, "MANUAL VERIFICATION NEEDED")
+    verbose_logs("Example ACL Config", "iptables -A OUTPUT -p tcp -m state --state NEW,ESTABLISHED -j ACCEPT")
+    verbose_logs("Example ACL Config", "iptables -A OUTPUT -p udp -m state --state NEW,ESTABLISHED -j ACCEPT")
+    verbose_logs("Example ACL Config", "iptables -A OUTPUT -p icmp -m state --state NEW,ESTABLISHED -j ACCEPT")
+    verbose_logs("Example ACL Config", "iptables -A INPUT -p tcp -m state --state ESTABLISHED -j ACCEPT")
+    verbose_logs("Example ACL Config", "iptables -A INPUT -p udp -m state --state ESTABLISHED -j ACCEPT")
+    verbose_logs("Example ACL Config", "iptables -A INPUT -p icmp -m state --state ESTABLISHED -j ACCEPT")
 
-    compliance_check = "Ensure firewall rules exist for all open ports (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
+    compliance_check = "Ensure firewall rules exist for all open ports (Scored, Level 1 Server and Workstation)"
+    cmd1 = "netstat -ln | grep -v 127\.0\.0\."
+    netstat_op = exec_command(cmd1)
+    verbose_logs("Command used", cmd1)
+    verbose_logs("Command Output", netstat_op)
+    cmd = "iptables -L INPUT -v -n"
+    iptables_openports = exec_command(cmd)
+    verbose_logs("Expected output to be compliant","Verify all open ports listening on non-localhost addresses have at least one firewall rule")
+    verbose_logs("To be compliant, run","iptables -A INPUT -p <protocol> --dport <port> -m state --state NEW -j ACCEPT")
+    open_ports = netstat_op.split('\n')
+    acls_present = 0
+    for each_port_line in open_ports:
+        extract_port = re.match(r'(^\w+)\s+\d+\s+\d+.*?:(\d+).*?LISTEN', each_port_line, re.I|re.M|re.S)
+        if extract_port:
+            protocol =  extract_port.group(1)
+            port_num = extract_port.group(2)
+            expected_out = protocol + " dpt:" + port_num + " state NEW"
+            if expected_out in iptables_openports:
+                acls_present = 1
+            else:
+                acls_present = 0
+                break
+    if acls_present:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:    
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
     compliance_check = "Ensure wireless interfaces are disabled (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "which iwconfig"
+    is_iwconfig = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if "iwconfig" in is_iwconfig:
+        cmd = "ip link show up"
+        iwconfig_interfaces = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", iwconfig_interfaces)
+        verbose_logs("Expected output to be compliant","Verify no wireless interfaces are active")
+        verbose_logs("To be compliant, run","ip link set <interface> down")
+        if "wlan" in iwconfig_interfaces:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
 
 def config_sysAccounting():
     global compliant_count
 
-    compliance_check = "Configure System Accounting (auditd)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure audit log storage size is configured (Not Scored, Level 2 Server and Workstation)"
+    if os.path.isfile("/etc/audit/auditd.conf"):
+        cmd = "grep max_log_file /etc/audit/auditd.conf"
+        max_log_file = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant","Set \"max_log_file = <MB>\" parameter in /etc/audit/auditd.conf")
+        if "max_log_file" in max_log_file:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure audit log storage size is configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure system is disabled when audit logs are full (Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/audit/auditd.conf"):
+        cmd = "grep -iE \"space_left_action|action_mail_acct|dmin_space_left_action\" /etc/audit/auditd.conf"
+        is_auditd_actionspace = exec_command(cmd)
+        is_space_left_action = re.match(r'.*?space_left_action\s*=\s*email.*?',space_left_action,re.I|re.M|re.S)
+        is_action_mail_acct = re.match(r'.*?action_mail_acct\s*=\s*root.*?',action_mail_acct,re.I|re.M|re.S)
+        is_dmin_space_left_action = re.match(r'.*?admin_space_left_action\s*=\s*halt.*?',is_dmin_space_left_action,re.I|re.M|re.S)
+        verbose_logs("Command Output", cmd)
+        verbose_logs("Expected output to be compliant","Parameters space_left_action = email, action_mail_acct = root, admin_space_left_action = halt must be configured")
+        verbose_logs("To be compliant, run","Edit /etc/audit/auditd.conf by adding space_left_action = email, action_mail_acct = root, admin_space_left_action = halt")
+        if is_space_left_action and is_action_mail_acct and is_dmin_space_left_action:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure system is disabled when audit logs are full (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure audit logs are not automatically deleted (Scored, Level 2 Server and Workstation)"
+    if os.path.isfile("/etc/audit/auditd.conf")
+        cmd = "grep max_log_file_action /etc/audit/auditd.conf"
+        max_log_file_action = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", max_log_file_action)
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","Edit /etc/audit/auditd.conf by adding max_log_file_action = keep_logs")
+        is_max_log_file_action = re.match(r'.*?max_log_file_action\s*=\s*keep_logs.*?',action_mail_acct,re.I|re.M|re.S)
+        if is_max_log_file_action:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure audit logs are not automatically deleted (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure auditd service is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure auditd service is enabled (Scored, Level 2 Server and Workstation)"
+    cmd = "rc-service -l |grep -i auditd"
+    is_auditd = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_auditd)
+    verbose_logs("Expected output to be compliant","Verify auditd is enabled")
+    verbose_logs("To be compliant, run","rc-service auditd start or service auditd start or /etc/init.d/auditd start")
+    if "auditd" in is_auditd:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure auditing for processes that start prior to auditd is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "Ensure events that modify date and time information are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure auditing for processes that start prior to auditd is enabled (Scored, Level 2 Server and Workstation)"
+    #Bootconfig is present in either extlinux.conf, syslinux.cfg, grub.cfg, /etc/default/grub, /proc/cmdline
+    #https://wiki.alpinelinux.org/wiki/Bootloaders
+    if os.path.isfile("/boot/extlinux.conf"):
+        cmd = "cat /boot/extlinux.conf"
+        is_audit = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_audit)
+        verbose_logs("Expected output to be compliant","Verify that each linux line has the audit=1 parameter set")
+        if "audit=1" in is_audit:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    elif os.path.isfile("/boot/syslinux/syslinux.cfg"):
+        cmd = "cat /boot/syslinux/syslinux.cfg"
+        is_audit = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_audit)
+        verbose_logs("Expected output to be compliant","Verify that each linux line has the audit=1 parameter set")
+        if "audit=1" in is_audit:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    elif os.path.isfile("/boot/grub/grub.cfg"):
+        cmd = "cat /boot/grub/grub.cfg"
+        is_audit = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_audit)
+        verbose_logs("Expected output to be compliant","Verify that each linux line has the audit=1 parameter set")
+        if "audit=1" in is_audit:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    elif os.path.isfile("/etc/default/grub"):
+        cmd = "cat /etc/default/grub"
+        is_audit = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_audit)
+        verbose_logs("Expected output to be compliant","Verify that each linux line has the audit=1 parameter set")
+        verbose_logs("To be compliant","Edit /etc/default/grub and add GRUB_CMDLINE_LINUX=\"audit=1\"")
+        if "audit=1" in is_audit:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    elif os.path.isfile("/proc/cmdline"):
+        cmd = "cat /proc/cmdline"
+        is_audit = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_audit)
+        verbose_logs("Expected output to be compliant","Verify that each linux line has the audit=1 parameter set")
+        verbose_logs("To be compliant","Add GRUB_CMDLINE_LINUX=\"audit=1\" as kernel parameter")
+        if "audit=1" in is_audit:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure events that modify date and time information are collected (Scored, Level 2 Server and Workstation)"
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = "grep time-change /etc/audit/audit.rules"
+        is_auditrules = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_auditrules)
+        verbose_logs("Expected output to be compliant","Set adjtimex, settimeofday, stime, clock_settime etc in /etc/audit/audit.rules")
+        verbose_logs("To be compliant, run","Edit /etc/audit/audit.rules by adding adjtimex, settimeofday, stime, clock_settime etc")
 
     compliance_check = "Ensure events that modify user/group information are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
