@@ -2064,7 +2064,7 @@ def config_sysAccounting():
         update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure audit logs are not automatically deleted (Scored, Level 2 Server and Workstation)"
-    if os.path.isfile("/etc/audit/auditd.conf")
+    if os.path.isfile("/etc/audit/auditd.conf"):
         cmd = "grep max_log_file_action /etc/audit/auditd.conf"
         max_log_file_action = exec_command(cmd)
         verbose_logs("Command used", cmd)
