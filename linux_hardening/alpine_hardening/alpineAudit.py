@@ -2777,167 +2777,336 @@ def config_SSH():
     global compliant_count
 
     compliance_check = "Ensure permissions on /etc/ssh/sshd_config are configured (Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    cmd = "stat /etc/ssh/sshd_config"
+    sshd_config_perm = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_config_perm)
+    verbose_logs("Expected output to be compliant","verify Uid and Gid are both 0/root and Access does not grant permissions to group or other")
+    verbose_logs("To be compliant, run","chown root:root /etc/ssh/sshd_config && chmod og-rwx /etc/ssh/sshd_config")
+    is_sshd_config_perm = re.match(r'(.*?Access:\s*\(0600/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\))', sshd_config_perm, re.I|re.M|re.S)
+    if is_sshd_config_perm:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SSH Protocol is set to 2 (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH Protocol is set to 2 (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^Protocol\" /etc/ssh/sshd_config"
+    ssh_protocol = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", ssh_protocol)
+    verbose_logs("Expected output to be compliant","Protocol 2")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as Protocol 2")
+    if "protocol" in ssh_protocol.lower():
+        is_sshprotocol2 = re.match(r'^Protocol\s+2.*?', ssh_protocol, re.I|re.M)
+        if is_sshprotocol2:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SSH LogLevel is set to INFO (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH LogLevel is set to INFO (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^LogLevel\" /etc/ssh/sshd_config"
+    is_sshloglevel_info = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_sshloglevel_info)
+    verbose_logs("Expected output to be compliant","LogLevel INFO")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as LogLevel INFO")
+    if " INFO" in is_sshloglevel_info:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SSH X11 forwarding is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH X11 forwarding is disabled (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^X11Forwarding\" /etc/ssh/sshd_config"
+    sshd_x11forwarding = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_x11forwarding)
+    verbose_logs("Expected output to be compliant","X11Forwarding no")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as X11Forwarding no")
+    if " no" in sshd_x11forwarding:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SSH MaxAuthTries is set to 4 or less (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH MaxAuthTries is set to 4 or less (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^MaxAuthTries\" /etc/ssh/sshd_config"
+    sshd_maxauthtries = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_maxauthtries)
+    verbose_logs("Expected output to be compliant","verify that output MaxAuthTries is 4 or less")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as MaxAuthTries 4")
+    if "MaxAuthTries" in sshd_maxauthtries:
+        is_maxauthtries = re.match(r'^MaxAuthTries\s+(\d+).*?', sshd_maxauthtries, re.I|re.M)
+        if is_maxauthtries:
+            if int(is_maxauthtries.group(1)) <=1:
+                compliant_count += 1
+                update_compliance_status(compliance_check, "COMPLIANT")
+            else:
+                compliant_count -= 1
+                update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SSH IgnoreRhosts is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
 
-    compliance_check = "Ensure SSH HostbasedAuthentication is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH IgnoreRhosts is enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^IgnoreRhosts\" /etc/ssh/sshd_config"
+    sshd_ignorerhosts = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_ignorerhosts)
+    verbose_logs("Expected output to be compliant","IgnoreRhosts yes")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as IgnoreRhosts yes")
+    if " yes" in sshd_ignorerhosts:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SSH root login is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH HostbasedAuthentication is disabled (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^HostbasedAuthentication\" /etc/ssh/sshd_config"
+    sshd_hostbasedauthentication = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_hostbasedauthentication)
+    verbose_logs("Expected output to be compliant","HostbasedAuthentication no")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as HostbasedAuthentication no")
+    if " no" in sshd_hostbasedauthentication:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SSH PermitEmptyPasswords is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH root login is disabled (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^PermitRootLogin\" /etc/ssh/sshd_config"
+    sshd_permitrootlogin = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_permitrootlogin)
+    verbose_logs("Expected output to be compliant","PermitRootLogin no")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as PermitRootLogin no")
+    if " no" in sshd_permitrootlogin:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SSH PermitUserEnvironment is disabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH PermitEmptyPasswords is disabled (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^PermitEmptyPasswords\" /etc/ssh/sshd_config"
+    sshd_permitemptypasswords = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_permitemptypasswords)
+    verbose_logs("Expected output to be compliant","PermitEmptyPasswords no")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as PermitEmptyPasswords no")
+    if " no" in sshd_permitemptypasswords:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure only approved ciphers are used (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH PermitUserEnvironment is disabled (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^PermitUserEnvironment\" /etc/ssh/sshd_config"
+    sshd_permituserenvironment = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_permituserenvironment)
+    verbose_logs("Expected output to be compliant","PermitUserEnvironment no")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as PermitUserEnvironment no")
+    if " no" in sshd_permituserenvironment:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure only approved MAC algorithms are used (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure only approved ciphers are used (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"Ciphers\" /etc/ssh/sshd_config"
+    sshd_ciphers = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_ciphers)
+    verbose_logs("Expected output to be compliant","Verify that output does not contain any cipher block chaining (-cbc) algorithms")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as Ciphers aes256-ctr,aes192-ctr,aes128-ctr")
+    if "-cbc" in sshd_ciphers:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
 
-    compliance_check = "Ensure SSH Idle Timeout Interval is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure only approved MAC algorithms are used (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"MACs\" /etc/ssh/sshd_config"
+    sshd_macs = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
+    verbose_logs("Command Output", sshd_macs)
+    verbose_logs("Expected output to be compliant","Verify output does not contain any unlisted MAC algorithms")
     verbose_logs("To be compliant, run","")
+    update_compliance_status(compliance_check, "MANUAL VERIFICATION NEEDED")
 
-    compliance_check = "Ensure SSH LoginGraceTime is set to one minute or less (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH Idle Timeout Interval is configured (Scored, Level 1 Server and Workstation)"
+    cmd = "grep -iE \"^(ClientAliveInterval|ClientAliveCountMax)\" /etc/ssh/sshd_config"
+    sshd_clientalive_interval_countmax = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_clientalive_interval_countmax)
+    verbose_logs("Expected output to be compliant","Verify ClientAliveInterval is 300 or less and ClientAliveCountMax is 3 or less")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as ClientAliveInterval 300, ClientAliveCountMax 0")
+    is_clientaliveinterval = re.match(r'^ClientAliveInterval\s+(\d+).*?', sshd_clientalive_interval_countmax, re.I|re.M|re.S)
+    is_clientalivecountmax = re.match(r'^ClientAliveCountMax\s+(\d+).*?', sshd_clientalive_interval_countmax, re.I|re.M|re.S)
+    if is_clientaliveinterval and is_clientalivecountmax:
+        if (int(is_clientaliveinterval.group(1) <=300)) and (int(is_clientalivecountmax.group(1)) <=3):
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SSH access is limited (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH LoginGraceTime is set to one minute or less (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^LoginGraceTime\" /etc/ssh/sshd_config"
+    sshd_logingracetime = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_logingracetime)
+    verbose_logs("Expected output to be compliant","Verify that output LoginGraceTime is 60 or less")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as LoginGraceTime 60")
+    is_sshd_logingracetime = re.match(r'^LoginGraceTime\s+(\d+).*?', sshd_logingracetime, re.I|re.M|re.S)
+    if is_sshd_logingracetime:
+        if int(is_sshd_logingracetime.group(1)) <= 60:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure SSH warning banner is configured (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure SSH access is limited (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^(AllowUsers|AllowGroups|DenyUsers|DenyGroups)\" /etc/ssh/sshd_config"
+    sshd_users_groups = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", sshd_users_groups)
+    verbose_logs("Expected output to be compliant","Verify that output matches for at least one of AllowUsers, AllowGroups, DenyUsers and DenyGroups")
+    verbose_logs("To be compliant, run","Edit the /etc/ssh/sshd_config by adding one or more of the parameters AllowUsers <userlist>, AllowGroups <grouplist>, DenyUsers <userlist>, DenyGroups <grouplist>")
+    if ("AllowUsers" in sshd_users_groups) or ("AllowGroups" in sshd_users_groups) or ("DenyUsers" in sshd_users_groups) or ("DenyGroups" in sshd_users_groups):
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+
+
+    compliance_check = "Ensure SSH warning banner is configured (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^Banner\" /etc/ssh/sshd_config"
+    sshd_banner = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", sshd_banner)
+    verbose_logs("Expected output to be compliant","Banner /etc/issue.net")
+    verbose_logs("To be compliant, run","Edit /etc/ssh/sshd_config set the parameter as Banner /etc/issue.net")
+    if " /etc/issue.net" in sshd_banner:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def config_PAM():
     global compliant_count
 
-    compliance_check = "Ensure password creation requirements are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure password creation requirements are configured (Scored, Level 1 Server and Workstation)"
+    #password required pam_cracklib.so try_first_pass retry=3 minlen=14 dcredit=-1 ucredit=-1 ocredit=-1 lcredit=-1 
+    #password requisite pam_pwquality.so try_first_pass retry=3
+    if os.path.isfile("/etc/pam.d/common-password"):
+        cmd1 = "grep pam_cracklib.so in /etc/pam.d/common-password"
+        is_pam_cracklib = exec_command(cmd1)
+        cmd2 = "grep pam_pwquality.so in /etc/pam.d/common-password"
+        is_pam_pwquality = exec_command(cmd2)
+        verbose_logs("Command used", cmd1 + cmd2)
+        verbose_logs("Command Output", is_pam_cracklib + is_pam_pwquality)
+        verbose_logs("Expected output to be compliant","Verify password creation requirements are as listed or stricter(commonly configured with the pam_cracklib.so or pam_pwquality.so options in /etc/pam.d)")
+        verbose_logs("To be compliant, run","If pam_pwquality.so is in use also configure settings in /etc/security/pwquality.conf.")
+    elif os.path.isfile("/etc/pam.d/system-auth"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure lockout for failed password attempts is configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure lockout for failed password attempts is configured (Not Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/pam.d/common-password"):
+        cmd = ""
+        n = exec_command(cmd)
+    elif os.path.isfile("/etc/pam.d/system-auth"):
+        cmd = ""
+        n = exec_command(cmd)
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure password reuse is limited (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure password reuse is limited (Not Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/pam.d/common-password"):
+        cmd = "grep -iE \"pam_pwhistory|pam_unix\" /etc/pam.d/common-password"
+        is_pwhistory_unix = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_pwhistory_unix)
+        verbose_logs("Expected output to be compliant","password required pam_pwhistory.so remember=5; password sufficient pam_unix.so remember=5")
+        verbose_logs("To be compliant, run","edit the appropriate /etc/pam.d/ configuration file")
+        passwd_remember = re.match(r'password\s+(required\s+pam_pwhistory|sufficient\s+pam_unix)\.so\s+remember=(\d+)',is_pwhistory_unix, re.I|re.M|re.S)
+    elif os.path.isfile("/etc/pam.d/system-auth"):
+        cmd = "grep -iE \"pam_pwhistory|pam_unix\" /etc/pam.d/system-auth"
+        is_pwhistory_unix = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_pwhistory_unix)
+        verbose_logs("Expected output to be compliant","password required pam_pwhistory.so remember=5; password sufficient pam_unix.so remember=5")
+        verbose_logs("To be compliant, run","edit the appropriate /etc/pam.d/ configuration file")
+        passwd_remember = re.match(r'password\s+(required\s+pam_pwhistory|sufficient\s+pam_unix)\.so\s+remember=(\d+)',is_pwhistory_unix, re.I|re.M|re.S)
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure password hashing algorithm is SHA-512 (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure password hashing algorithm is SHA-512 (Not Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/pam.d/common-password"):
+        cmd = "grep pam_unix.so /etc/pam.d/common-password"
+        passwd_hashing = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", passwd_hashing)
+        verbose_logs("Expected output to be compliant","Verify password hashing algorithm is sha512")
+        verbose_logs("To be compliant, run","")
+        if "sha512" in passwd_hashing:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    elif os.path.isfile("/etc/pam.d/system-auth"):
+        cmd = "grep pam_unix.so /etc/pam.d/system-auth"
+        passwd_hashing = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", passwd_hashing)
+        verbose_logs("Expected output to be compliant","Verify password hashing algorithm is sha512")
+        verbose_logs("To be compliant, run","edit the appropriate /etc/pam.d/ configuration file and add/modify password sufficient pam_unix.so sha512")
+        if "sha512" in passwd_hashing:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def userAccounts_andEnvironment():
     global compliant_count
