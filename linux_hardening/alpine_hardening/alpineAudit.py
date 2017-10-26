@@ -1002,7 +1002,7 @@ def inetd_services():
 
     compliance_check = "Ensure chargen services are not enabled (Scored, Level 1 Server and Workstation)"
     #rc-status -a |grep -i chargen
-    #rc-service chargen status
+    #/c-service chargen status
     #rc-service -l |grep chargen
     cmd = "rc-status -a |grep -i chargen; rc-service -l |grep -i chargen"
     is_chargen = exec_command(cmd)
@@ -2174,297 +2174,609 @@ def config_sysAccounting():
         verbose_logs("Command Output", is_auditrules)
         verbose_logs("Expected output to be compliant","Set adjtimex, settimeofday, stime, clock_settime etc in /etc/audit/audit.rules")
         verbose_logs("To be compliant, run","Edit /etc/audit/audit.rules by adding adjtimex, settimeofday, stime, clock_settime etc")
+        cmd = "uname -m"
+        os_bit = exec_command(cmd)
+        is_stod = 0
+        is_stime = 0
+        is_cst64 = 0
+        is_cst32 = 0
+        is_ltime = 0
+        if "time-change" in is_auditrules:
+            audit_rules = is_auditrules.split('\n')
+            for each_au_tc_rule in audit_rules:
+                print "each_au_tc_rule:", each_au_tc_rule
+                stod = re.match(r'.*?(-a\s+always,exit\s+-F\s+arch=b64\s+-S\s+adjtimex\s+-S\s+settimeofday\s+-k\s+time-change).*?', each_au_tc_rule, re.I|re.M|re.S)
+                stime = re.match(r'.*?(-a\s+always,exit\s+-F\s+arch=b32\s+-S\s+adjtimex\s+-S\s+settimeofday\s+-S\s+stime\s+-k\s+time-change).*?',each_au_tc_rule, re.I|re.M|re.S)
+                cst64 = re.match(r'.*?(-a\s+always,exit\s+-F\s+arch=b64\s+-S\s+clock_settime\s+-k\s+time-change).*?',each_au_tc_rule, re.I|re.M|re.S)
+                cst32 = re.match(r'.*?(-a\s+always,exit\s+-F\s+arch=b32\s+-S\s+clock_settime\s+-k\s+time-change).*?',each_au_tc_rule, re.I|re.M|re.S)
+                ltime = re.match(r'.*?(-w\s+/etc/localtime\s+-p\s+wa\s+-k\s+time-change).*?',each_au_tc_rule, re.I|re.M|re.S)
+                if stod:
+                    is_stod = 1
+                if stime:
+                    is_stime = 1
+                if cst64:
+                    is_cst64 = 1
+                if cst32:
+                    is_cst32 = 1
+                if ltime:
+                    is_ltime = 1
+            if is_stod and stime and cst64 and cst32 and ltime and "64" in os_bit:
+                compliant_count += 1
+                update_compliance_status(compliance_check, "COMPLIANT")
+            elif stime and cst32 and ltime:
+                compliant_count += 1
+                update_compliance_status(compliance_check, "COMPLIANT")
+            else:
+                compliant_count -= 1
+                update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:   
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure events that modify user/group information are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure events that modify user/group information are collected (Scored, Level 2 Server and Workstation)"
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = "grep identity /etc/audit/audit.rules"
+        is_identity = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_identity)
+        verbose_logs("Expected output to be compliant","identity set on sensitive files like /etc/passwd, /etc/shadow")
+        verbose_logs("To be compliant, run","Edit /etc/audit/audit.rules by adding \"-w /etc/(group,passwd,shadow,gshadow) -p wa -k identity\" or \"-w /etc/security/opasswd -p wa -k identity\"")
+        is_group = 0
+        is_passwd= 0
+        is_gshadow = 0
+        is_shadow = 0
+        is_securityopasswd = 0
+        if "identity" in is_identity:
+            file_identity = is_identity.split('\n')
+            for each_file_identity in file_identity:
+                print "each_file_identity:", each_file_identity
+                group = re.match(r'.*?(-w\s+/etc/group\s+-p\s+wa\s+-k\s+identity).*?',each_file_identity, re.I|re.M|re.S)
+                passwd = re.match(r'.*?(-w\s+/etc/passwd\s+-p\s+wa\s+-k\s+identity).*?',each_file_identity, re.I|re.M|re.S)
+                gshadow = re.match(r'.*?(-w\s+/etc/gshadow\s+-p\s+wa\s+-k\s+identity).*?',each_file_identity, re.I|re.M|re.S)
+                shadow = re.match(r'.*?(-w\s+/etc/shadow\s+-p\s+wa\s+-k\s+identity).*?',each_file_identity, re.I|re.M|re.S)
+                securityopasswd = re.match(r'.*?(-w\s+/etc/security/opasswd\s+-p\s+wa\s+-k\s+identity).*?',each_file_identity, re.I|re.M|re.S)
+                if group:
+                    is_group = 1
+                if passwd:
+                    is_passwd = 1
+                if gshadow:
+                    is_gshadow = 1
+                if shadow:
+                    is_shadow = 1
+                if securityopasswd:
+                    is_securityopasswd = 1
+            if is_group and is_passwd and gshadow and shadow and securityopasswd:
+                compliant_count += 1
+                update_compliance_status(compliance_check, "COMPLIANT")
+            else:
+                compliant_count -= 1
+                update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "Ensure events that modify the system's network environment are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure events that modify the system's network environment are collected (Scored, Level 2 Server and Workstation)"
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure events that modify the system's Mandatory Access Controls are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure login and logout events are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure session initiation information is collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure discretionary access control permission modification events are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure unsuccessful unauthorized file access attempts are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure use of privileged commands is collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure successful file system mounts are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure file deletion events by users are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure changes to system administration scope (sudoers) is collected(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure system administrator actions (sudolog) are collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure kernel module loading and unloading is collected (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:   
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
     compliance_check = "Ensure the audit configuration is immutable (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/audit/audit.rules"):
+        cmd = "grep \"^\s*[^#]\" /etc/audit/audit.rules | tail -1"
+        is_auconf_immu = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_auconf_immu)
+        verbose_logs("Expected output to be compliant","-e 2")
+        verbose_logs("To be compliant, run","Edit /etc/audit/audit.rules and add \"-e 2\" at the end of file")
+        if "-e 2" in is_auconf_immu:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def config_logging():
     global compliant_count
 
-    compliance_check = "Ensure rsyslog Service is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure rsyslog Service is enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -i rsyslog; rc-service -l |grep -i rsyslog"
+    is_rsyslog = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_rsyslog)
+    verbose_logs("Expected output to be compliant","Verify rsyslog Service is enabled")
+    verbose_logs("To be compliant, run","apk add rsyslog && rc-service rsyslog start")
+    if "rsyslog" in is_rsyslog:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure logging is configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure logging is configured (Not Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/rsyslog.conf"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure rsyslog default file permissions configured (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure rsyslog default file permissions configured (Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/rsyslog.conf"):
+        cmd = "grep ^\$FileCreateMode /etc/rsyslog.conf"
+        rsyslog_file_perm = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", rsyslog_file_perm)
+        verbose_logs("Expected output to be compliant","$FileCreateMode 0640")
+        verbose_logs("To be compliant","Edit the /etc/rsyslog.conf and set $FileCreateMode to 0640 or more restrictive")
+        #TODO: extract permission, convert into int which should be less than or equal to 640
+        if "640" in rsyslog_file_perm:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
     
     compliance_check = "Ensure rsyslog is configured to send logs to a remote log host (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/rsyslog.conf"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
     compliance_check = "Ensure remote rsyslog messages are only accepted on designated log hosts. (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/rsyslog.conf"):
+        cmd = ""
+        n = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", )
+        verbose_logs("Expected output to be compliant","")
+        verbose_logs("To be compliant, run","")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure syslog-ng service is enabled (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure syslog-ng service is enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -i syslog-ng; rc-service -l |grep -i syslog-ng"
+    is_syslogng = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
+    verbose_logs("Command Output", is_syslogng)
     verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("To be compliant, run","apk add syslog-ng && rc-service syslog-ng start")
+    if "syslog-ng" in is_syslogng:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure logging is configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure logging is configured (Not Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/syslog-ng/syslog-ng.conf"):
+        cmd = "cat /etc/syslog-ng/syslog-ng.conf"
+        content_syslogng = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", content_syslogng)
+        verbose_logs("Expected output to be compliant","Review the contents of the /etc/syslog-ng/syslog-ng.conf file to ensure appropriate logging is set.")
+        verbose_logs("To be compliant, check","execute ls -l /var/log/")
+        update_compliance_status(compliance_check, "COMPLIANT (verify manually)")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT (verify manually)")
+
+    compliance_check = "Ensure syslog-ng default file permissions configured (Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/syslog-ng/syslog-ng.conf"):
+        cmd = "grep ^options /etc/syslog-ng/syslog-ng.conf"
+        is_syslogng_options = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_syslogng_options)
+        verbose_logs("Expected output to be compliant","verify the perm option is 0640 or more restrictive")
+        verbose_logs("To be compliant, run","Edit the /etc/syslog-ng/syslog-ng.conf and set perm option to 0640 or more restrictive")
+        if "options" in is_syslogng_options:
+            syslogng_perm = re.match(r'^options\s+{.*?perm\(.(\d{3})\)\s*;.*?',is_syslogng_options,re.I|re.M|re.S)
+            if syslogng_perm:
+                if int(syslogng_perm.group(1)) <= 640:
+                    update_compliance_status(compliance_check, "COMPLIANT")
+                else:
+                    compliant_count -= 1
+                    update_compliance_status(compliance_check, "NON-COMPLIANT")
+            else:
+                compliant_count -= 1
+                update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure syslog-ng default file permissions configured (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure syslog-ng is configured to send logs to a remote log host (Not Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/syslog-ng/syslog-ng.conf"):
+        cmd = "grep \"destination logserver\" /etc/syslog-ng/syslog-ng.conf | grep -vE \"127\.0\.0\|localhost\""
+        syslogng_remote_log = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", syslogng_remote_log)
+        verbose_logs("Expected output to be compliant","Verify that logs are sent to a central host")
+        verbose_logs("To be compliant, run","Edit /etc/syslog-ng/syslog-ng.conf by adding Server IP/Domain")
+        if "destination logserver" in syslogng_remote_log:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure syslog-ng is configured to send logs to a remote log host (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure remote syslog-ng messages are only accepted on designated log hosts (Not Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/syslog-ng/syslog-ng.conf"):
+        cmd = "grep \"destination remote\" /etc/syslog-ng/syslog-ng.conf | grep -vE \"127\.0\.0\|localhost\""
+        syslogng_remote_desig = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", syslogng_remote_desig)
+        verbose_logs("Expected output to be compliant","Verify that logs are sent to a central host")
+        verbose_logs("To be compliant, run","Edit /etc/syslog-ng/syslog-ng.conf by adding Server IP/Domain")
+        if "destination logserver" in syslogng_remote_log:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "MANUAL VERIFICATION NEEDED")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure remote syslog-ng messages are only accepted on designated log hosts (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure rsyslog or syslog-ng is installed (Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -iE \"rsyslog|syslog-ng\"; rc-service -l |grep -iE \"rsyslog|syslog-ng\""
+    is_syslogRsyslogng = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_syslogRsyslogng)
+    verbose_logs("Expected output to be compliant","verify at least syslog or syslog-ng is running")
+    verbose_logs("To be compliant, run","apk add syslog-ng/rsyslog && rc-service syslog-ng/rsyslog start")
+    if "rsyslog" in is_syslogRsyslogng or "syslog-ng" in is_syslogRsyslogng:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure rsyslog or syslog-ng is installed (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure permissions on all logfiles are configured (Scored, Level 1 Server and Workstation)"
+    cmd = "find /var/log -type f |xargs stat | grep -i uid: | grep -v 640"
+    logfiles_perm = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", logfiles_perm)
+    verbose_logs("Expected output to be compliant","verify that other has no permissions on any files and group does not have write or execute permissions on any files i.e. 0640")
+    verbose_logs("To be compliant, run","find /var/log -type f -exec chmod g-wx,o-rwx {} +")
+    if "access:" in logfiles_perm.lower() and "uid:" in logfiles_perm.lower():
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
     
-    compliance_check = "Ensure permissions on all logfiles are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-    
-    compliance_check = "Ensure logrotate is configured (Not Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+
+    compliance_check = "Ensure logrotate is configured (Not Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/logrotate.conf"):
+        cmd = "grep /var/log /etc/logrotate.conf"
+        is_logrotate_configured = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", is_logrotate_configured)
+        verbose_logs("Expected output to be compliant","Verify logs are rotated according to Corporate policy")
+        verbose_logs("To be compliant","Edit /etc/logrotate.conf and /etc/logrotate.d/* to ensure logs are rotated according to Corporate policy")
+        if "/var/log" in is_logrotate_configured:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
 def config_cron():
     global compliant_count
 
-    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure cron daemon is enabled (Scored, Level 1 Server and Workstation)"
+    cmd = "rc-status -a |grep -i cron; rc-service -l |grep -i cron"
+    is_cron = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", is_cron)
+    verbose_logs("Expected output to be compliant","Verify cron daemon is enabled")
+    verbose_logs("To be compliant, run","apk add cron && rc-service cron start")
+    if "cron" in is_cron:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure permissions on /etc/crontab are configured (Scored, Level 1 Server and Workstation)"
+    cmd = "stat /etc/crontab"
+    crontab_perm = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", crontab_perm)
+    verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access does not grant permissions to group or other")
+    verbose_logs("To be compliant, run","chown root:root /etc/crontab && chmod og-rwx /etc/crontab")
+    required_crontab_perm  = re.match(r'(.*?Access:\s*\(0600/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\))',crontab_perm, re.I|re.M|re.S)
+    if required_crontab_perm:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure permissions on /etc/cron.hourly are configured (Scored, Level 1 Server and Workstation)"
+    cmd = "stat /etc/cron.hourly"
+    cronhourly_perm = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", cronhourly_perm)
+    verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access does not grant permissions to group or other")
+    verbose_logs("To be compliant, run","chown root:root /etc/cron.hourly && chmod og-rwx /etc/cron.hourly")
+    required_cronhourly_perm  = re.match(r'(.*?Access:\s*\(0600/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\))',cronhourly_perm, re.I|re.M|re.S)
+    if required_cronhourly_perm:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure permissions on /etc/cron.daily are configured (Scored, Level 1 Server and Workstation)"
+    cmd = "stat /etc/cron.daily"
+    crondaily_perm = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", crondaily_perm)
+    verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access does not grant permissions to group or other")
+    verbose_logs("To be compliant, run","chown root:root /etc/cron.daily && chmod og-rwx /etc/cron.daily")
+    required_crondaily_perm  = re.match(r'(.*?Access:\s*\(0600/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\))',crondaily_perm, re.I|re.M|re.S)
+    if required_crondaily_perm:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure permissions on /etc/cron.weekly are configured (Scored, Level 1 Server and Workstation)"
+    cmd = "stat /etc/cron.weekly"
+    cronweekly_perm = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", cronweekly_perm)
+    verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access does not grant permissions to group or other")
+    verbose_logs("To be compliant, run","chown root:root /etc/cron.weekly && chmod og-rwx /etc/cron.weekly")
+    required_cronweekly_perm  = re.match(r'(.*?Access:\s*\(0600/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\))',cronweekly_perm, re.I|re.M|re.S)
+    if required_cronweekly_perm:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
+    
+    compliance_check = "Ensure permissions on /etc/cron.monthly are configured (Scored, Level 1 Server and Workstation)"
+    cmd = "stat /etc/cron.monthly"
+    cronmonthly_perm = exec_command(cmd)
+    verbose_logs("Command used", cmd)
+    verbose_logs("Command Output", cronmonthly_perm)
+    verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access does not grant permissions to group or other")
+    verbose_logs("To be compliant, run","chown root:root /etc/cron.monthly && chmod og-rwx /etc/cron.monthly")
+    required_cronmonthly_perm  = re.match(r'(.*?Access:\s*\(0600/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\))',cronmonthly_perm, re.I|re.M|re.S)
+    if required_cronmonthly_perm:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure permissions on /etc/cron.d are configured (Scored, Level 1 Server and Workstation)"
+    cmd = "stat /etc/cron.d"
+    crond_perm = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", crond_perm)
+    verbose_logs("Expected output to be compliant","Verify Uid and Gid are both 0/root and Access does not grant permissions to group or other")
+    verbose_logs("To be compliant, run","chown root:root /etc/crond && chmod og-rwx /etc/crond")
+    required_crond_perm  = re.match(r'(.*?Access:\s*\(0600/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\))',crond_perm, re.I|re.M|re.S)
+    if required_crond_perm:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
-    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
-
-    compliance_check = "(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure at/cron is restricted to authorized users (Scored, Level 1 Server and Workstation)"
+    is_cron_deny = 0
+    is_cron_allow = 0
+    if os.path.isfile("/etc/cron.deny") or os.path.isfile("/etc/at.deny"):
+        is_cron_deny = 1
+    if os.path.isfile("/etc/cron.allow") and os.path.isfile("/etc/at.allow"):
+        is_cron_allow = 1
+    if is_cron_deny = 0 and is_cron_allow = 1:
+        cmd1 = "stat /etc/cron.allow"
+        cronallow = exec_command(cmd1)
+        required_crond_perm  = re.match(r'(.*?Access:\s*\(0600/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\))',crond_perm, re.I|re.M|re.S)
+        if required_crond_perm:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+        cmd2 = "stat /etc/at.allow"
+        atallow = exec_command(cmd2)
+        required_crond_perm  = re.match(r'(.*?Access:\s*\(0600/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\))',crond_perm, re.I|re.M|re.S)
+        if required_crond_perm:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+        verbose_logs("Command used", cmd1 + cmd2)
+        verbose_logs("Command Output", cronallow + atallow)
+        verbose_logs("Expected output to be compliant","ensure /etc/cron.deny and /etc/at.deny do not exist. verify Uid and Gid are both 0/root and Access does not grant permissions to group or other for both /etc/cron.allow and /etc/at.allow")
+        verbose_logs("To be compliant, run","remove /etc/cron.deny and /etc/at.deny and create and set permissions and ownership for /etc/cron.allow and /etc/at.allow")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
 
 def config_SSH():
     global compliant_count
 
-    compliance_check = "Ensure permissions on /etc/ssh/sshd_config are configured (Scored)(Not Scored, Level 1 Server and Workstation)"
+    compliance_check = "Ensure permissions on /etc/ssh/sshd_config are configured (Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
