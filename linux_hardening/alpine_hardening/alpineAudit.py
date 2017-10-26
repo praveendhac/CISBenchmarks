@@ -3111,31 +3111,97 @@ def config_PAM():
 def userAccounts_andEnvironment():
     global compliant_count
 
-    compliance_check = "Ensure password expiration is 90 days or less (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure password expiration is 90 days or less (Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/login.defs"):
+        cmd = "grep PASS_MAX_DAYS /etc/login.defs"
+        pass_max_days = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", pass_max_days)
+        verbose_logs("Expected output to be compliant","Verify PASS_MAX_DAYS is 90 or less")
+        verbose_logs("To be compliant","Set the PASS_MAX_DAYS parameter to 90 in /etc/login.defs")
+        if "PASS_MAX_DAYS" in pass_max_days:
+            no_pass_max_days = re.match(r'PASS_MAX_DAYS\s+(\d+)', pass_max_days, re.I|re.M)
+            if int(no_pass_max_days.group(1)) <=90:
+                compliant_count += 1
+                update_compliance_status(compliance_check, "COMPLIANT")
+            else:
+                compliant_count -= 1
+                update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure minimum days between password changes is 7 or more (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure minimum days between password changes is 7 or more (Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/login.defs"):
+        cmd = "grep PASS_MIN_DAYS /etc/login.defs"
+        pass_min_days = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", pass_min_days)
+        verbose_logs("Expected output to be compliant","Verify PASS_MIN_DAYS is 7 or more")
+        verbose_logs("To be compliant","Set the PASS_MIN_DAYS parameter to 7 in /etc/login.defs")
+        if "PASS_MIN_DAYS" in pass_min_days:
+            no_pass_min_days = re.match(r'PASS_MIN_DAYS\s+(\d+)', pass_min_days, re.I|re.M)
+            if int(no_pass_min_days.group(1)) >= 7:
+                compliant_count += 1
+                update_compliance_status(compliance_check, "COMPLIANT")
+            else:
+                compliant_count -= 1
+                update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
     compliance_check = "Ensure password expiration warning days is 7 or more (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    if os.path.isfile("/etc/login.defs"):
+        cmd = "grep PASS_WARN_AGE /etc/login.defs"
+        pass_warn_age = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", pass_warn_age)
+        verbose_logs("Expected output to be compliant","Verify PASS_WARN_AGE is 7 or more")
+        verbose_logs("To be compliant","Set the PASS_WARN_AGE parameter to 7 in /etc/login.defs")
+        if "PASS_MAX_DAYS" in pass_warn_age:
+            no_pass_warn_age = re.match(r'PASS_WARN_AGE\s+(\d+)', pass_warn_age, re.I|re.M)
+            if int(no_pass_warn_age.group(1)) >= 7:
+                compliant_count += 1
+                update_compliance_status(compliance_check, "COMPLIANT")
+            else:
+                compliant_count -= 1
+                update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
     compliance_check = "Ensure inactive password lock is 30 days or less (Scored)(Not Scored, Level 1 Server and Workstation)"
+    if os.path.isfile("/etc/login.defs"):
+        cmd = "useradd -D | grep INACTIVE"
+        inactive_pass = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", inactive_pass)
+        verbose_logs("Expected output to be compliant","Verify INACTIVE is 30 or less")
+        verbose_logs("To be compliant","Set the PASS_MAX_DAYS parameter to 30 in /etc/login.defs")
+        if "PASS_MAX_DAYS" in pass_max_days:
+            no_pass_max_days = re.match(r'PASS_MAX_DAYS\s+(\d+)', pass_max_days, re.I|re.M)
+            if int(no_pass_max_days.group(1)) <=90:
+                compliant_count += 1
+                update_compliance_status(compliance_check, "COMPLIANT")
+            else:
+                compliant_count -= 1
+                update_compliance_status(compliance_check, "NON-COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     cmd = ""
     n = exec_command(cmd)
     verbose_logs("Command used", cmd)
