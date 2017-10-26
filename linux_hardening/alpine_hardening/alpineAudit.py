@@ -2746,7 +2746,7 @@ def config_cron():
         is_cron_deny = 1
     if os.path.isfile("/etc/cron.allow") and os.path.isfile("/etc/at.allow"):
         is_cron_allow = 1
-    if is_cron_deny = 0 and is_cron_allow = 1:
+    if is_cron_deny == 0 and is_cron_allow == 1:
         cmd1 = "stat /etc/cron.allow"
         cronallow = exec_command(cmd1)
         required_crond_perm  = re.match(r'(.*?Access:\s*\(0600/..........\)\s*Uid:\s*\(\s*0/\s*root\)\s*Gid:\s*\(\s*0/\s*root\))',crond_perm, re.I|re.M|re.S)
