@@ -3202,37 +3202,100 @@ def userAccounts_andEnvironment():
     else:
         compliant_count -= 1
         update_compliance_status(compliance_check, "NON-COMPLIANT")
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
     
-    compliance_check = "Ensure system accounts are non-login (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure system accounts are non-login (Scored, Level 1 Server and Workstation)"
+    cmd = "egrep -v \"^\+\" /etc/passwd | awk -F: '($1!=\"root\" && $1!=\"sync\" && $1!=\"shutdown\" && $1!=\"halt\" && $3<500 && $7!=\"/sbin/nologin\" && $7!=\"/bin/false\") {print}'"
+    users_nonlogin = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", users_nonlogin)
+    verbose_logs("Expected output to be compliant","verify no results are returned")
+    verbose_logs("To be compliant, run","usermod -s /sbin/nologin <user>")
+    if "EXCEPTION:" in users_nonlogin:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure default group for the root account is GID 0 (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
+    compliance_check = "Ensure default group for the root account is GID 0 (Scored, Level 1 Server and Workstation)"
+    cmd = "grep \"^root:\" /etc/passwd | cut -f4 -d:"
+    def_grp_gid0 = exec_command(cmd)
     verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    verbose_logs("Command Output", def_grp_gid0)
+    verbose_logs("Expected output to be compliant","Verify default group for the root account is GID 0")
+    verbose_logs("To be compliant, run","usermod -g 0 root")
+    if "0" in users_nonlogin:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count -= 1
+        update_compliance_status(compliance_check, "NON-COMPLIANT")
     
-    compliance_check = "Ensure default user umask is 027 or more restrictive (Scored)(Not Scored, Level 1 Server and Workstation)"
-    cmd = ""
-    n = exec_command(cmd)
-    verbose_logs("Command used", cmd)
-    verbose_logs("Command Output", )
-    verbose_logs("Expected output to be compliant","")
-    verbose_logs("To be compliant, run","")
+    compliance_check = "Ensure default user umask is 027 or more restrictive (Scored, Level 1 Server and Workstation)"
+    #077-causes files and directories created by users to not be readable by any other user on the system
+    #027-would make files and directories readable by users in the same Unix group
+    #022-would make files readable by every user on the system
+    is_bashrc = 0
+    is_pofile= 0
+    bashrc_umaskval = 0
+    profile_umaskval = 0
+    if os.path.isfile("/etc/bashrc"):
+        is_bashrc = 1
+        cmd = "grep \"^umask\" /etc/bashrc"
+        umask_bashrc = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", umask_bashrc)
+        verbose_logs("Expected output to be compliant","Verify umask returned are 027 or more restrictive")
+        verbose_logs("To be compliant, run","Edit /etc/bashrc, /etc/profile or files for any other shell supported on your system by adding umask 027")
+        if "umask" in umask_basjrc:
+            umask_val_bashrc = re.match(r'umask\s+(\d+)', umask_bashrc, re.M|re.I|re.S)
+            bashrc_umaskval = int(umask_val_bashrc.group(1))
     
+    if os.path.isfile("/etc/profile"):
+        is_profile= 1
+        cmd = "grep \"^umask\" /etc/profile"
+        umask_profile = exec_command(cmd)
+        verbose_logs("Command used", cmd)
+        verbose_logs("Command Output", umask_profile)
+        verbose_logs("Expected output to be compliant","Verify umask returned are 027 or more restrictive")
+        verbose_logs("To be compliant, run","Edit /etc/bashrc, /etc/profile or files for any other shell supported on your system by adding umask 027")
+        if "umask" in umask_profile:
+            umask_val_profile = re.match(r'umask\s+(\d+)', umask_profile, re.M|re.I|re.S)
+            profile_umaskval = int(umask_val_profile.group(1))
+
+    if is_bashrc and is_profile:
+        verbose_logs("INFO":"/etc/bashrc file not found, /etc/profile found!")
+        if bashrc_umaskval >= 27 and profile_umaskval >= 27:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    elif is_bashrc = 0 and is_profile = 1:
+        verbose_logs("INFO":"/etc/bashrc file not found, /etc/profile found!")
+        if profile_umaskval >= 27:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    elif is_bashrc = 1 and is_profile = 0:
+        verbose_logs("INFO":"/etc/bashrc file found, /etc/profile not found!")
+        if bashrc_umaskval >= 27:
+            compliant_count += 1
+            update_compliance_status(compliance_check, "COMPLIANT")
+        else:
+            compliant_count -= 1
+            update_compliance_status(compliance_check, "NON-COMPLIANT")
+    elif is_bashrc = 0 and is_profile = 0:
+        verbose_logs("INFO":"/etc/bashrc file not found, /etc/profile not found!")
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+    else:
+        compliant_count += 1
+        update_compliance_status(compliance_check, "COMPLIANT")
+
+
     compliance_check = "Ensure root login is restricted to system console (Not Scored)(Not Scored, Level 1 Server and Workstation)"
     cmd = ""
     n = exec_command(cmd)
