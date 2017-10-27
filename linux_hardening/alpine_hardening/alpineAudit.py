@@ -3264,31 +3264,31 @@ def userAccounts_andEnvironment():
             profile_umaskval = int(umask_val_profile.group(1))
 
     if is_bashrc and is_profile:
-        verbose_logs("INFO":"/etc/bashrc file not found, /etc/profile found!")
+        verbose_logs("INFO","/etc/bashrc file not found, /etc/profile found!")
         if bashrc_umaskval >= 27 and profile_umaskval >= 27:
             compliant_count += 1
             update_compliance_status(compliance_check, "COMPLIANT")
         else:
             compliant_count -= 1
             update_compliance_status(compliance_check, "NON-COMPLIANT")
-    elif is_bashrc = 0 and is_profile = 1:
-        verbose_logs("INFO":"/etc/bashrc file not found, /etc/profile found!")
+    elif is_bashrc == 0 and is_profile == 1:
+        verbose_logs("INFO","/etc/bashrc file not found, /etc/profile found!")
         if profile_umaskval >= 27:
             compliant_count += 1
             update_compliance_status(compliance_check, "COMPLIANT")
         else:
             compliant_count -= 1
             update_compliance_status(compliance_check, "NON-COMPLIANT")
-    elif is_bashrc = 1 and is_profile = 0:
-        verbose_logs("INFO":"/etc/bashrc file found, /etc/profile not found!")
+    elif is_bashrc == 1 and is_profile == 0:
+        verbose_logs("INFO","/etc/bashrc file found, /etc/profile not found!")
         if bashrc_umaskval >= 27:
             compliant_count += 1
             update_compliance_status(compliance_check, "COMPLIANT")
         else:
             compliant_count -= 1
             update_compliance_status(compliance_check, "NON-COMPLIANT")
-    elif is_bashrc = 0 and is_profile = 0:
-        verbose_logs("INFO":"/etc/bashrc file not found, /etc/profile not found!")
+    elif is_bashrc == 0 and is_profile == 0:
+        verbose_logs("INFO","/etc/bashrc file not found, /etc/profile not found!")
         compliant_count += 1
         update_compliance_status(compliance_check, "COMPLIANT")
     else:
